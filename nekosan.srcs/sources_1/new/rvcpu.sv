@@ -15,8 +15,16 @@ module rvcpu(
 	input wire IRQ,
 	input wire [2:0] IRQ_BITS);
 
+// -----------------------------------------------------------------------
+// Bus logic
+// -----------------------------------------------------------------------
+
 logic [31:0] dataout = 32'd0;
 assign busdata = (|buswe) ? dataout : 32'dz;
+
+// -----------------------------------------------------------------------
+// Internal wires/constants
+// -----------------------------------------------------------------------
 
 localparam CPU_IDLE			= 0;
 localparam CPU_DECODE		= 1;
@@ -26,12 +34,13 @@ localparam CPU_RETIRE		= 4;
 localparam CPU_LOADSTALL	= 5;
 localparam CPU_LOAD			= 6;
 localparam CPU_UPDATECSR	= 7;
+localparam CPU_MSTALL		= 8;
 
 logic [31:0] PC;
 logic [31:0] nextPC;
 logic ebreak;
 logic illegalinstruction;
-logic [7:0] cpustate;
+logic [8:0] cpustate;
 logic [31:0] instruction;
 
 initial begin
@@ -39,7 +48,7 @@ initial begin
 	nextPC = `CPU_RESET_VECTOR;
 	ebreak = 1'b0;
 	illegalinstruction = 1'b0;
-	cpustate = 8'd0;
+	cpustate = 9'd0;
 	cpustate[CPU_RETIRE] = 1'b1; // RETIRE state by default
 	instruction = {25'd0, `ADDI}; // NOOP by default (addi x0,x0,0)
 end
@@ -60,6 +69,10 @@ wire [11:0] csrindex;
 wire [31:0] immed;
 wire selectimmedasrval2;
 
+// -----------------------------------------------------------------------
+// Wide instruction decoder
+// -----------------------------------------------------------------------
+
 decoder InstructionDecoder(
 	.instruction(instruction),
 	.opcode(opcode),
@@ -78,6 +91,10 @@ decoder InstructionDecoder(
 	.immed(immed),
 	.selectimmedasrval2(selectimmedasrval2) );
 
+// -----------------------------------------------------------------------
+// Integer register file
+// -----------------------------------------------------------------------
+
 logic regwena = 1'b0;
 logic [31:0] regdata = 32'd0;
 wire [31:0] rval1, rval2;
@@ -90,6 +107,10 @@ registerfile rv32iregisters(
 	.datain(regdata),
 	.rval1(rval1),
 	.rval2(rval2) );
+
+// -----------------------------------------------------------------------
+// Integer/Branch ALUs
+// -----------------------------------------------------------------------
 
 wire [31:0] aluout;
 IALU IntegerALU(
@@ -106,6 +127,59 @@ BALU BranchALU(
 	.val1(rval1),
 	.val2(rval2),
 	.bluop(bluop) );
+
+// -----------------------------------------------------------------------
+// Mul/div/rem units
+// -----------------------------------------------------------------------
+
+wire mulbusy, divbusy, divbusyu;
+wire [31:0] product;
+wire [31:0] quotient;
+wire [31:0] quotientu;
+wire [31:0] remainder;
+wire [31:0] remainderu;
+
+wire isexecuting = (cpustate[CPU_EXEC]==1'b1) ? 1'b1 : 1'b0;
+wire mulstart = isexecuting & (aluop==`ALU_MUL) & (opcode == `OPCODE_OP);
+wire divstart = isexecuting & (aluop==`ALU_DIV | aluop==`ALU_REM) & (opcode == `OPCODE_OP);
+
+multiplier themul(
+    .clk(clock),
+    .reset(reset),
+    .start(mulstart),
+    .busy(mulbusy),           // calculation in progress
+    .func3(Wfunc3),
+    .multiplicand(rval1),
+    .multiplier(rval2),
+    .product(product) );
+
+DIVU unsigneddivider (
+	.clk(clock),
+	.reset(reset),
+	.start(divstart),		// start signal
+	.busy(divbusyu),		// calculation in progress
+	.dividend(rval1),		// dividend
+	.divisor(rval2),		// divisor
+	.quotient(quotientu),	// result: quotient
+	.remainder(remainderu)	// result: remainer
+);
+
+DIV signeddivider (
+	.clk(clock),
+	.reset(reset),
+	.start(divstart),		// start signal
+	.busy(divbusy),			// calculation in progress
+	.dividend(rval1),		// dividend
+	.divisor(rval2),		// divisor
+	.quotient(quotient),	// result: quotient
+	.remainder(remainder)	// result: remainder
+);
+
+// Start trigger
+wire imathstart = divstart | mulstart;
+
+// Stall status
+wire imathbusy = divbusy | divbusyu | mulbusy;
 
 // -----------------------------------------------------------------------
 // Cycle/Timer/Reti CSRs
@@ -220,7 +294,7 @@ always @(posedge clock, negedge resetn) begin
 
 	end else begin
 
-		cpustate <= 8'd0;
+		cpustate <= 9'd0;
 
 		busre <= 1'b0;
 		buswe <= 1'b0;
@@ -272,9 +346,14 @@ always @(posedge clock, negedge resetn) begin
 						cpustate[CPU_RETIRE] <= 1'b1;
 					end
 					`OPCODE_OP, `OPCODE_OP_IMM: begin
-						regwena <= 1'b1;
-						regdata <= aluout;
-						cpustate[CPU_RETIRE] <= 1'b1;
+						if (imathstart) begin
+							regwena <= 1'b0;
+							cpustate[CPU_MSTALL] <= 1'b1;
+						end else begin
+							regwena <= 1'b1;
+							regdata <= aluout;
+							cpustate[CPU_RETIRE] <= 1'b1;
+						end
 					end
 					/*`OPCODE_FLOAT_LDW, */`OPCODE_LOAD: begin
 						cpustate[CPU_LOADSTALL] <= 1'b1;
@@ -368,6 +447,28 @@ always @(posedge clock, negedge resetn) begin
 						cpustate[CPU_RETIRE] <= 1'b1;
 					end
 				endcase
+			end
+			
+			cpustate[CPU_MSTALL]: begin
+				if (imathbusy) begin
+					// Keep stalling while M/D/R units are busy
+					cpustate[CPU_MSTALL] <= 1'b1;
+				end else begin
+					// Write result to destination register
+					regwena <= 1'b1;
+					unique case (aluop)
+						`ALU_MUL: begin
+							regdata <= product;
+						end
+						`ALU_DIV: begin
+							regdata <= func3==`F3_DIV ? quotient : quotientu;
+						end
+						`ALU_REM: begin
+							regdata <= func3==`F3_REM ? remainder : remainderu;
+						end
+					endcase
+					cpustate[CPU_RETIRE] <= 1'b1;
+				end
 			end
 
 			cpustate[CPU_RETIRE]: begin

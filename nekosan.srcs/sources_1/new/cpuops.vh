@@ -238,9 +238,9 @@
 `define ALU_OR			4'd9
 `define ALU_AND			4'd10
 // Mul/Div
-`define ALU_MUL			4'd1
-`define ALU_DIV			4'd2
-`define ALU_REM			4'd3
+`define ALU_MUL			4'd11
+`define ALU_DIV			4'd12
+`define ALU_REM			4'd13
 // Branch
 `define ALU_EQ			4'd1
 `define ALU_NE			4'd2

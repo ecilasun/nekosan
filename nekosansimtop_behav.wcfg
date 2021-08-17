@@ -7,20 +7,19 @@
          <top_modules>
             <top_module name="glbl" />
             <top_module name="nekosansimtop" />
-            <top_module name="vcomponents" />
          </top_modules>
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="141.990752693 us"></ZoomStartTime>
-      <ZoomEndTime time="250.690752694 us"></ZoomEndTime>
-      <Cursor1Time time="179.633017166 us"></Cursor1Time>
+      <ZoomStartTime time="273.333334 ns"></ZoomStartTime>
+      <ZoomEndTime time="4,397.333335 ns"></ZoomEndTime>
+      <Cursor1Time time="1,000.000000 ns"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="155"></NameColumnWidth>
-      <ValueColumnWidth column_width="97"></ValueColumnWidth>
+      <NameColumnWidth column_width="246"></NameColumnWidth>
+      <ValueColumnWidth column_width="118"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="166" />
+   <WVObjectSize size="168" />
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/sys_clock">
       <obj_property name="ElementShortName">sys_clock</obj_property>
       <obj_property name="ObjectShortName">sys_clock</obj_property>
@@ -44,10 +43,6 @@
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/clk100">
       <obj_property name="ElementShortName">clk100</obj_property>
       <obj_property name="ObjectShortName">clk100</obj_property>
-   </wvobject>
-   <wvobject type="logic" fp_name="/nekosansimtop/simtop/clk150">
-      <obj_property name="ElementShortName">clk150</obj_property>
-      <obj_property name="ObjectShortName">clk150</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/deviceresetn">
       <obj_property name="ElementShortName">deviceresetn</obj_property>
@@ -354,8 +349,8 @@
       <obj_property name="ObjectShortName">busre</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect">
-      <obj_property name="ElementShortName">deviceSelect[9:0]</obj_property>
-      <obj_property name="ObjectShortName">deviceSelect[9:0]</obj_property>
+      <obj_property name="ElementShortName">deviceSelect[10:0]</obj_property>
+      <obj_property name="ObjectShortName">deviceSelect[10:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider108" type="divider">
       <obj_property name="label">CACHE</obj_property>
@@ -412,6 +407,18 @@
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/instruction">
       <obj_property name="ElementShortName">instruction[31:0]</obj_property>
       <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/is_compressed">
+      <obj_property name="ElementShortName">is_compressed</obj_property>
+      <obj_property name="ObjectShortName">is_compressed</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/decodedinstruction">
+      <obj_property name="ElementShortName">decodedinstruction[31:0]</obj_property>
+      <obj_property name="ObjectShortName">decodedinstruction[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/illegalinstruction">
+      <obj_property name="ElementShortName">illegalinstruction</obj_property>
+      <obj_property name="ObjectShortName">illegalinstruction</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/regdata">
       <obj_property name="ElementShortName">regdata[31:0]</obj_property>
