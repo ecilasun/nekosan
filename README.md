@@ -17,11 +17,10 @@ This version implements the following:
   - Via SPI interface
 - On-board switch / LED I/O
   - Using memory mapped I/O mechanism
-
+- Audio output support
+  - Same i2s device as before via self-timing FIFO
 
 ## TODO
-- Audio output support
-  - Same i2s device as before
 - Video output support
   - Same DVI output device as before
   - A minimal GPU implementation
