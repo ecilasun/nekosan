@@ -33,11 +33,11 @@ wire [1:0]   tdqs_n;
 wire [15:0]  ddr3_dq;
 
 /*wire [3:0] DVI_R, DVI_G, DVI_B;
-wire DVI_HS, DVI_VS, DVI_DE, DVI_CLK;
+wire DVI_HS, DVI_VS, DVI_DE, DVI_CLK;*/
 
-wire spi_cs_n, spi_mosi, spi_miso, spi_sck;
+wire spi_cs_n, spi_mosi, spi_sck;
+logic spi_miso = 1'b1;
 wire spi_cd = 1'b1; // High when no card inserted
-*/
 
 ddr3_model ddr3simmod(
     .rst_n(ddr3_reset_n),
@@ -86,14 +86,14 @@ nekosantop simtop(
     ,.ddr3_dm(ddr3_dm)
     ,.ddr3_dqs_p(ddr3_dqs_p)
     ,.ddr3_dqs_n(ddr3_dqs_n)
-    ,.ddr3_dq(ddr3_dq) /*,
+    ,.ddr3_dq(ddr3_dq)
     // SPI
 	// SD Card PMOD on port C
-	.spi_cs_n(spi_cs_n),
-	.spi_mosi(spi_mosi),
-	.spi_miso(spi_miso),
-	.spi_sck(spi_sck),
-	.spi_cd(spi_cd) */);
+	,.spi_cs_n(spi_cs_n)
+	,.spi_mosi(spi_mosi)
+	,.spi_miso(spi_miso)
+	,.spi_sck(spi_sck)
+	,.spi_cd(spi_cd) );
 
 // Feed a 100Mhz external clock to top module
 always begin

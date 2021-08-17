@@ -7,10 +7,10 @@ module IALU(
 	input wire [2:0] func3,
 	input wire [31:0] val1,
 	input wire [31:0] val2,
-	input wire [4:0] aluop );
+	input wire [3:0] aluop );
 
 // Integer ALU
-always @ (*) begin
+always_comb begin
 	case (aluop)
 		// Integer ops
 		`ALU_ADD:  begin aluout = val1 + val2; end
@@ -23,7 +23,7 @@ always @ (*) begin
 		`ALU_SRA:  begin aluout = $signed(val1) >>> val2[4:0]; end
 		`ALU_OR:   begin aluout = val1 | val2; end
 		`ALU_AND:  begin aluout = val1 & val2; end
-		//default:   begin aluout = 32'd0; end
+		//default:   begin aluout = val1; end // Pass through
 	endcase
 end
 

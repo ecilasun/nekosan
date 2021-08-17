@@ -7,7 +7,7 @@ module BALU(
 	output logic branchout,
 	input wire [31:0] val1,
 	input wire [31:0] val2,
-	input wire [4:0] bluop);
+	input wire [3:0] bluop);
 
 // Branch ALU
 always @ (posedge clock) begin

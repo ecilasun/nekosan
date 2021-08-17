@@ -3,6 +3,7 @@
 module sysbus(
 	input wire clock,
 	input wire clk25,
+	input wire clk50,
 	input wire resetn,
 	// Control
 	output wire busbusy,
@@ -12,7 +13,7 @@ module sysbus(
 	input wire busre,
 	input wire cachemode, // 0:D$, 1:I$
 	// Interrupts
-	output logic [1:0] IRQ_BITS = 2'b00,
+	output logic [2:0] IRQ_BITS = 3'b000,
 	// UART
 	output wire uart_rxd_out,
 	input wire uart_txd_in,
@@ -33,7 +34,13 @@ module sysbus(
     output  [1:0]   ddr3_dm,
     inout   [1:0]   ddr3_dqs_p,
     inout   [1:0]   ddr3_dqs_n,
-    inout   [15:0]  ddr3_dq	);
+    inout   [15:0]  ddr3_dq,
+    // SPI
+	output spi_cs_n,
+	output spi_mosi,
+	input spi_miso,
+	output spi_sck,
+	input spi_cd );
 
 // ----------------------------------------------------------------------------
 // Data select
@@ -60,7 +67,7 @@ wire [9:0] deviceSelect = {
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0110 ? 1'b1 : 1'b0,	// 09: 0x8xxxxx18 Raw audio output port				-
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0101 ? 1'b1 : 1'b0,	// 08: 0x8xxxxx14 Switch incoming queue byte count	-
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0100 ? 1'b1 : 1'b0,	// 07: 0x8xxxxx10 Device switch states				-
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0011 ? 1'b1 : 1'b0,	// 06: 0x8xxxxx0C SPI read/write port				-
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0011 ? 1'b1 : 1'b0,	// 06: 0x8xxxxx0C SPI read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0010 ? 1'b1 : 1'b0,	// 05: 0x8xxxxx08 UART read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0001 ? 1'b1 : 1'b0,	// 04: 0x8xxxxx04 UART incoming queue byte count	+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0000 ? 1'b1 : 1'b0,	// 03: 0x8xxxxx00 GPU command queue					-
@@ -70,13 +77,117 @@ wire [9:0] deviceSelect = {
 };
 
 // ----------------------------------------------------------------------------
+// SD Card Controller
+// ----------------------------------------------------------------------------
+
+// SD Card Write FIFO
+wire spiwfull, spiwempty, spiwvalid;
+wire [7:0] spiwdout;
+wire sddataoutready;
+logic spiwre=1'b0;
+logic spiwwe=1'b0;
+logic [7:0] spiwdin;
+SPIfifo SDCardWriteFifo(
+	// In
+	.full(spiwfull),
+	.din(spiwdin),
+	.wr_en(spiwwe),
+	.clk(clock),
+	// Out
+	.empty(spiwempty),
+	.dout(spiwdout),
+	.rd_en(spiwre),
+	.valid(spiwvalid),
+	// Ctl
+	.srst(~resetn) );
+
+// Pull from write queue and send through SD controller
+logic sddatawe = 1'b0;
+logic [7:0] sddataout = 8'd0;
+logic [1:0] sdqwritestate = 2'b00;
+always @(posedge clock) begin
+
+	spiwre <= 1'b0;
+	sddatawe <= 1'b0;
+
+	unique case (sdqwritestate)
+		2'b00: begin
+			if ((~spiwempty) & sddataoutready) begin
+				spiwre <= 1'b1;
+				sdqwritestate <= 2'b01;
+			end
+		end
+		2'b01: begin
+			if (spiwvalid) begin
+				sddatawe <= 1'b1;
+				sddataout <= spiwdout;
+				sdqwritestate <= 2'b10;
+			end
+		end
+		2'b10: begin
+			// One clock delay to catch with sddataoutready properly
+			sdqwritestate <= 2'b00;
+		end
+	endcase
+
+end
+
+// SD Card Read FIFO
+wire spirempty, spirfull, spirvalid;
+wire [7:0] spirdout;
+logic [7:0] spirdin = 8'd0;
+logic spirwe = 1'b0, spirre = 1'b0;
+SPIfifo SDCardReadFifo(
+	// In
+	.full(spirfull),
+	.din(spirdin),
+	.wr_en(spirwe),
+	// Out
+	.empty(spirempty),
+	.dout(spirdout),
+	.rd_en(spirre),
+	.valid(spirvalid),
+	.clk(clock),
+	// Ctl
+	.srst(~resetn) );
+
+// Push incoming data from SD controller to read queue
+wire [7:0] sddatain;
+wire sddatainready;
+always @(posedge clock) begin
+	spirwe <= 1'b0;
+	if (sddatainready) begin
+		spirwe <= 1'b1;
+		spirdin <= sddatain;
+	end
+end
+
+SPI_MASTER SDCardController(
+        .CLK(clock),
+        .RST(~resetn),
+        // SPI MASTER INTERFACE
+        .SCLK(spi_sck),
+        .CS_N(spi_cs_n),
+        .MOSI(spi_mosi),
+        .MISO(spi_miso),
+        // INPUT USER INTERFACE
+        .DIN(sddataout),
+        //.DIN_ADDR(1'b0), // this range is [-1:0] since we have only one client to pick, therefure unused
+        .DIN_LAST(1'b0),
+        .DIN_VLD(sddatawe),
+        .DIN_RDY(sddataoutready),
+        // OUTPUT USER INTERFACE
+        .DOUT(sddatain),
+        .DOUT_VLD(sddatainready) );
+
+// ----------------------------------------------------------------------------
 // DDR3
 // ----------------------------------------------------------------------------
 
 wire calib_done;
 wire [11:0] device_temp;
 
-assign busready = calib_done;
+logic calib_done1=1'b0, calib_done2=1'b0;
 
 logic [27:0] app_addr = 28'd0;
 logic [2:0]  app_cmd = 3'd0;
@@ -172,6 +283,11 @@ logic [2:0] ddr3uistate = INIT;
 localparam CMD_WRITE = 3'b000;
 localparam CMD_READ = 3'b001;
 
+always @ (posedge ui_clk) begin
+	calib_done1 <= calib_done;
+	calib_done2 <= calib_done1;
+end
+
 // ddr3 driver
 always @ (posedge ui_clk) begin
 	if (ui_clk_sync_rst) begin
@@ -179,10 +295,10 @@ always @ (posedge ui_clk) begin
 		app_en <= 0;
 		app_wdf_wren <= 0;
 	end else begin
-	
+
 		case (ddr3uistate)
 			INIT: begin
-				if (calib_done) begin
+				if (calib_done2) begin
 					ddr3uistate <= IDLE;
 				end
 			end
@@ -417,7 +533,7 @@ end
 
 always @(posedge clock) begin
 	// Assume nothing set
-	IRQ_BITS <= 2'b00;
+	IRQ_BITS <= 3'b000;
 
 	// Keeps forcing interrupts until the FIFOs are empty
 
@@ -427,12 +543,16 @@ always @(posedge clock) begin
 	if (~uartrcvempty) begin
 		IRQ_BITS[0] <= 1'b1;	// UARTRX
 	end
+	
+	if (~spirempty) begin
+		IRQ_BITS[1] <= 1'b1;	// SPIRX
+	end
 
 	// Device switch state queue will trigger external interrupt when not drained
 	// Handler should try to drain the fifo at least up to FIFO size items
 	// but doesn't need to over-drain as more data is coming in
 	/*if (~switchempty) begin
-		IRQ_BITS[1] <= 1'b1;	// SWITCHES/SLIDERS
+		IRQ_BITS[2] <= 1'b1;	// SWITCHES/SLIDERS
 	end*/
 end
 
@@ -469,25 +589,34 @@ logic [255:0] currentcacheline;
 // Bus Logic
 // ----------------------------------------------------------------------------
 
-localparam BUS_IDLE					= 0;
-localparam BUS_READ					= 1;
-localparam BUS_WRITE				= 2;
-localparam BUS_ARAMRETIRE			= 3;
-localparam BUS_DDR3CACHESTOREHI		= 4;
-localparam BUS_DDR3CACHELOADHI		= 5;
-localparam BUS_DDR3CACHELOADLO		= 6;
-localparam BUS_DDR3CACHEWAIT		= 7;
-localparam BUS_DDR3UPDATECACHELINE	= 8;
-localparam BUS_UPDATEFINALIZE		= 9;
-localparam BUS_UARTRETIRE			= 10;
+localparam BUS_INIT					= 0;
+localparam BUS_IDLE					= 1;
+localparam BUS_READ					= 2;
+localparam BUS_WRITE				= 3;
+localparam BUS_ARAMRETIRE			= 4;
+localparam BUS_DDR3CACHESTOREHI		= 5;
+localparam BUS_DDR3CACHELOADHI		= 6;
+localparam BUS_DDR3CACHELOADLO		= 7;
+localparam BUS_DDR3CACHEWAIT		= 8;
+localparam BUS_DDR3UPDATECACHELINE	= 9;
+localparam BUS_UPDATEFINALIZE		= 10;
+localparam BUS_UARTRETIRE			= 11;
+localparam BUS_SPIRETIRE			= 12;
 
-logic [3:0] busmode = BUS_IDLE;
+logic [3:0] busmode = BUS_INIT;
 logic [31:0] ddr3wdat = 32'd0;
 logic ddr3rw = 1'b0;
 
+// Cross
+logic calib_done3=1'b0, calib_done4=1'b0;
+always @(posedge clock) begin
+	calib_done3 <= calib_done;
+	calib_done4 <= calib_done3;
+end
+
 wire busactive = busmode != BUS_IDLE;
 // Any read/write activity and non-mode-0 is considered 'busy'
-assign busbusy = busactive | busre | (|buswe) | (~calib_done); // Wait for DDR3 as well
+assign busbusy = busactive | busre | (|buswe);
 
 always @(posedge clock) begin
 	if (~resetn) begin
@@ -500,11 +629,18 @@ always @(posedge clock) begin
 		aramre <= 1'b0;
 
 		case (busmode)
+		
+			BUS_INIT: begin
+				if (calib_done4) begin
+					busmode <= BUS_IDLE;
+				end
+			end
 
-			2'b00: begin // IDLE
+			BUS_IDLE: begin
 			
-				// End previous UART write
+				// End previous UART/SPI writes
 				uartsendwe <= 1'b0;
+				spiwwe <= 1'b0;
 
 				if (deviceSelect[DEV_DDR3] & (busre | (|buswe))) begin
 					currentcacheline <= cache[busaddress[12:5]];
@@ -531,6 +667,10 @@ always @(posedge clock) begin
 							uartsenddin <= busdata[7:0];
 							busmode <= BUS_WRITE;
 						end
+						deviceSelect[DEV_SPIRW]: begin
+							spiwdin <= busdata[7:0];
+							busmode <= BUS_WRITE;
+						end
 					endcase
 				end
 
@@ -545,6 +685,9 @@ always @(posedge clock) begin
 							busmode <= BUS_READ;
 						end
 						deviceSelect[DEV_UARTRW]: begin
+							busmode <= BUS_READ;
+						end
+						deviceSelect[DEV_SPIRW]: begin
 							busmode <= BUS_READ;
 						end
 						deviceSelect[DEV_UARTCOUNT]: begin
@@ -593,9 +736,20 @@ always @(posedge clock) begin
 						if(~uartrcvempty) begin
 							uartrcvre <= 1'b1;
 							busmode <= BUS_UARTRETIRE;
-						end else begin // Never block on read attempts
-							dataout <= 32'd0;
-							busmode <= BUS_IDLE;
+						end else begin
+							// Block when no data available
+							// NOTE: If UART hasn't received data, there's nothing to read
+							busmode <= BUS_READ;
+						end
+					end
+					deviceSelect[DEV_SPIRW]: begin
+						if(~spirempty) begin
+							spirre <= 1'b1;
+							busmode <= BUS_SPIRETIRE;
+						end else begin
+							// Block when no data available
+							// NOTE: SPI can't read without sending a data stream first
+							busmode <= BUS_READ;
 						end
 					end
 					deviceSelect[DEV_UARTCOUNT]: begin
@@ -648,6 +802,14 @@ always @(posedge clock) begin
 							busmode <= BUS_WRITE; // Stall until fifo's empty
 						end
 					end
+					deviceSelect[DEV_SPIRW]: begin
+						if (~spiwfull) begin
+							spiwwe <= 1'b1;
+							busmode <= BUS_IDLE;
+						end else begin
+							busmode <= BUS_WRITE; // Stall until fifo's empty
+						end
+					end
 				endcase
 			end
 			
@@ -663,6 +825,16 @@ always @(posedge clock) begin
 					// This should not be a problem ordinarily
 					// since we only kick retire if fifo wasn't empty
 					busmode <= BUS_UARTRETIRE;
+				end
+			end
+
+			BUS_SPIRETIRE: begin
+				spirre <= 1'b0;
+				if (spirvalid) begin
+					dataout <= {spirdout, spirdout, spirdout, spirdout};
+					busmode <= BUS_IDLE;
+				end else begin
+					busmode <= BUS_SPIRETIRE;
 				end
 			end
 

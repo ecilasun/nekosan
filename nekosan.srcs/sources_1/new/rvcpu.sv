@@ -13,7 +13,7 @@ module rvcpu(
 	output logic busre = 1'b0,
 	output logic cachemode = 1'b0,
 	input wire IRQ,
-	input wire [1:0] IRQ_TYPE);
+	input wire [2:0] IRQ_BITS);
 
 logic [31:0] dataout = 32'd0;
 assign busdata = (|buswe) ? dataout : 32'dz;
@@ -45,7 +45,8 @@ initial begin
 end
 
 wire [4:0] opcode;
-wire [4:0] aluop;
+wire [3:0] aluop;
+wire [3:0] bluop;
 wire rwen;
 wire fwen;
 wire [2:0] func3;
@@ -63,6 +64,7 @@ decoder InstructionDecoder(
 	.instruction(instruction),
 	.opcode(opcode),
 	.aluop(aluop),
+	.bluop(bluop),
 	.rwen(rwen),
 	.fwen(fwen),
 	.func3(func3),
@@ -103,8 +105,7 @@ BALU BranchALU(
 	.branchout(branchout),
 	.val1(rval1),
 	.val2(rval2),
-	.bluop(aluop) );
-
+	.bluop(bluop) );
 
 // -----------------------------------------------------------------------
 // Cycle/Timer/Reti CSRs
@@ -410,7 +411,9 @@ always @(posedge clock, negedge resetn) begin
 							end
 							externalinterrupt: begin
 								CSRReg[`CSR_MCAUSE][15:0] <= 16'd11; // Machine External Interrupt
-								CSRReg[`CSR_MCAUSE][31:16] <= {1'b1, 13'd0, IRQ_TYPE}; // Mask generated for devices causing interrupt
+								// Device mask (lower 15 bits of upper word)
+								// [11:0]:SWITCHES:SPIRX:UARTRX
+								CSRReg[`CSR_MCAUSE][31:16] <= {1'b1, 12'd0, IRQ_BITS};
 							end
 							default: begin
 								CSRReg[`CSR_MCAUSE][15:0] <= 16'd0; // No interrupt/exception

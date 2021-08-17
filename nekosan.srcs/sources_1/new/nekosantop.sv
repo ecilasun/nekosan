@@ -8,7 +8,7 @@
 module nekosantop(
 	// Input clock @100MHz
 	input sys_clock,
-	// UART device pins
+	// UART device pins - USBUART
 	output wire uart_rxd_out,
 	input wire uart_txd_in,
     // DDR3 SDRAM device pins
@@ -26,23 +26,32 @@ module nekosantop(
     output  [1:0]   ddr3_dm,
     inout   [1:0]   ddr3_dqs_p,
     inout   [1:0]   ddr3_dqs_n,
-    inout   [15:0]  ddr3_dq );
+    inout   [15:0]  ddr3_dq,
+    // SPI - SDCard - PMOD C
+	output spi_cs_n,
+	output spi_mosi,
+	input spi_miso,
+	output spi_sck,
+	//inout [1:0] dat, // UNUSED
+	input spi_cd );
 
 // ----------------------------------------------------------------------------
 // Clock and reset logic
 // ----------------------------------------------------------------------------
 
 wire devicereset;
-wire clk25, clk100, clk120, clk150;
+wire clk25, clk100, clk120, clk50;
+wire sys_clk_in, clk200, cpuclock;
 
 sysclockandreset SystemClockAndResetGen(
 	.sys_clock(sys_clock),
 	.clk25(clk25),
 	.clk100(clk100),
-	.clk150(clk150),
 	.clk120(clk120),
+	.clk50(clk50),
+	.cpuclock(cpuclock),
 	.sys_clk_in(sys_clk_in),
-	.ddr3_ref(ddr3_ref),
+	.ddr3_ref(clk200),
 	.devicereset(devicereset));
 
 wire deviceresetn = ~devicereset;
@@ -57,11 +66,12 @@ wire [31:0] busdata;
 wire [3:0] buswe;
 wire busre;
 wire cachemode;
-wire [1:0] IRQ_BITS;
+wire [2:0] IRQ_BITS;
 
 sysbus SystemBus(
-	.clock(clk100),
+	.clock(cpuclock),
 	.clk25(clk25),
+	.clk50(clk50),
 	.resetn(deviceresetn),
 	// Bus / cache control
 	.busbusy(busbusy),
@@ -77,7 +87,7 @@ sysbus SystemBus(
 	.uart_txd_in(uart_txd_in),
 	// DDR3
 	.sys_clk_in(sys_clk_in),
-	.ddr3_ref(ddr3_ref),
+	.ddr3_ref(clk200),
     .ddr3_reset_n(ddr3_reset_n),
     .ddr3_cke(ddr3_cke),
     .ddr3_ck_p(ddr3_ck_p), 
@@ -92,14 +102,20 @@ sysbus SystemBus(
     .ddr3_dm(ddr3_dm),
     .ddr3_dqs_p(ddr3_dqs_p),
     .ddr3_dqs_n(ddr3_dqs_n),
-    .ddr3_dq(ddr3_dq) );
+    .ddr3_dq(ddr3_dq),
+    // SPI
+	.spi_cs_n(spi_cs_n),
+	.spi_mosi(spi_mosi),
+	.spi_miso(spi_miso),
+	.spi_sck(spi_sck),
+	.spi_cd(spi_cd) );
 
 // ----------------------------------------------------------------------------
 // CPU
 // ----------------------------------------------------------------------------
 
 rvcpu CPU0(
-	.clock(clk100),
+	.clock(cpuclock),
 	.wallclock(clk25),
 	.resetn(deviceresetn),
 	// Bus / cache control
@@ -111,6 +127,6 @@ rvcpu CPU0(
 	.cachemode(cachemode),
 	// Interrupts
 	.IRQ((|IRQ_BITS)),
-	.IRQ_TYPE(IRQ_BITS) );
+	.IRQ_BITS(IRQ_BITS) );
 
 endmodule

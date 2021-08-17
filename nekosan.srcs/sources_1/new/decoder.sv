@@ -5,7 +5,8 @@
 module decoder(
 	input wire [31:0] instruction,		// Raw input instruction
 	output logic [4:0] opcode,			// Current instruction class
-	output logic [4:0] aluop,			// Current ALU op
+	output logic [3:0] aluop,			// Current ALU op
+	output logic [3:0] bluop,			// Current BLU op
 	output logic rwen,					// Integer register writes enabled
 	output logic fwen,					// Flaot register writes enabled
 	output logic [2:0] func3,			// Sub-instruction
@@ -59,9 +60,10 @@ always_comb begin
 			immed = 32'd0;
 			rwen = 1'b1;
 			fwen = 1'b0;
+			bluop = `ALU_NONE;
 			if (instruction[25]==1'b0) begin
 				// Base integer ALU instructions
-				unique case (instruction[14:12])
+				case (instruction[14:12])
 					3'b000: aluop = instruction[30] == 1'b0 ? `ALU_ADD : `ALU_SUB;
 					3'b001: aluop = `ALU_SLL;
 					3'b010: aluop = `ALU_SLT;
@@ -73,7 +75,7 @@ always_comb begin
 				endcase
 			end else begin
 				// M-extension instructions
-				unique case (instruction[14:12])
+				case (instruction[14:12])
 					3'b000, 3'b001, 3'b010, 3'b011: aluop = `ALU_MUL;
 					3'b100, 3'b101: aluop = `ALU_DIV;
 					3'b110, 3'b111: aluop = `ALU_REM;
@@ -86,7 +88,8 @@ always_comb begin
 			immed = {{21{instruction[31]}},instruction[30:20]};
 			rwen = 1'b1;
 			fwen = 1'b0;
-			unique case (instruction[14:12])
+			bluop = `ALU_NONE;
+			case (instruction[14:12])
 				3'b000: aluop = `ALU_ADD; // NOTE: No immediate mode sub exists
 				3'b001: aluop = `ALU_SLL;
 				3'b010: aluop = `ALU_SLT;
@@ -104,6 +107,7 @@ always_comb begin
 			rwen = 1'b1;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPURETIRE_MASK;
 		end
 
@@ -112,6 +116,7 @@ always_comb begin
 			rwen = 1'b0;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPUSTORE_MASK;
 		end
 
@@ -121,6 +126,7 @@ always_comb begin
 			rwen = 1'b0;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPULOAD_MASK;
 		end
 
@@ -129,6 +135,7 @@ always_comb begin
 			rwen = 1'b1;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPURETIRE_MASK;
 		end
 
@@ -137,6 +144,7 @@ always_comb begin
 			rwen = 1'b1;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPURETIRE_MASK;
 		end
 
@@ -144,13 +152,14 @@ always_comb begin
 			immed = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
 			rwen = 1'b0;
 			fwen = 1'b0;
-			unique case (instruction[14:12])
-				3'b000: aluop = `ALU_EQ;
-				3'b001: aluop = `ALU_NE;
-				3'b100: aluop = `ALU_L;
-				3'b101: aluop = `ALU_GE;
-				3'b110: aluop = `ALU_LU;
-				3'b111: aluop = `ALU_GEU;
+			aluop = `ALU_NONE;
+			case (instruction[14:12])
+				3'b000: bluop = `ALU_EQ;
+				3'b001: bluop = `ALU_NE;
+				3'b100: bluop = `ALU_L;
+				3'b101: bluop = `ALU_GE;
+				3'b110: bluop = `ALU_LU;
+				3'b111: bluop = `ALU_GEU;
 			endcase
 			//nextstage = `CPURETIRE_MASK;
 		end
@@ -160,6 +169,7 @@ always_comb begin
 			rwen = 1'b1;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPURETIRE_MASK;
 		end
 
@@ -168,6 +178,7 @@ always_comb begin
 			rwen = 1'b0;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			//nextstage = `CPURETIRE_MASK;
 			//
 		end
@@ -178,7 +189,8 @@ always_comb begin
 			rwen = 1'b1;//(instruction[14:12] == 3'b000) ? 1'b0 : 1'b1;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
-			unique case (instruction[14:12])
+			bluop = `ALU_NONE;
+			/*case (instruction[14:12])
 				3'b001, // CSRRW
 				3'b010, // CSRRS
 				3'b011, // CSSRRC
@@ -191,12 +203,12 @@ always_comb begin
 				3'b100 : begin
 					//nextstage = `CPURETIRE_MASK;
 				end
-			endcase
+			endcase*/
 		end
 
 		/*instrOneHot[`O_H_FLOAT_OP]: begin
 			immed = 32'd0;
-			unique case (instruction[31:25])
+			case (instruction[31:25])
 				`FADD,`FSUB,`FMUL,`FDIV,`FSGNJ,`FCVTWS,`FCVTSW,`FSQRT,`FEQ,`FMIN: begin // FCVTWUS and FCVTSWU implied by FCVTWS and FCVTSW, FSGNJ includes FSGNJN and FSGNJX, FEQ includes FLT and FLE, FMIN includes FMAX
 					// For fcvtws (float to int) and FEQ/FLT/FLE, result is written back to integer register
 					// All other output goes into float registers 
@@ -214,6 +226,7 @@ always_comb begin
 				end
 			endcase
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 		end
 
 		instrOneHot[`O_H_FLOAT_MSUB], instrOneHot[`O_H_FLOAT_MADD], instrOneHot[`O_H_FLOAT_NMSUB], instrOneHot[`O_H_FLOAT_NMADD]: begin
@@ -221,6 +234,7 @@ always_comb begin
 			rwen = 1'b0;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			// Float writes are deferred to the end of CPUFFSTALL state
 		end
 
@@ -229,6 +243,7 @@ always_comb begin
 			rwen = 1'b0;
 			fwen = 1'b0;
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 		end*/
 
 		default: begin
@@ -238,6 +253,7 @@ always_comb begin
 			fwen = 1'b0;
 			//nextstage = `CPURETIRE_MASK; // At this point, we trigger illegal instruction exception
 			aluop = `ALU_NONE;
+			bluop = `ALU_NONE;
 			immed = 32'd0;
 		end
 	endcase

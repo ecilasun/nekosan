@@ -12,15 +12,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="0.000000 ns"></ZoomStartTime>
-      <ZoomEndTime time="2,618.692138 ns"></ZoomEndTime>
-      <Cursor1Time time="1,000.000000 ns"></Cursor1Time>
+      <ZoomStartTime time="141.990752693 us"></ZoomStartTime>
+      <ZoomEndTime time="250.690752694 us"></ZoomEndTime>
+      <Cursor1Time time="179.633017166 us"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
-      <NameColumnWidth column_width="167"></NameColumnWidth>
+      <NameColumnWidth column_width="155"></NameColumnWidth>
       <ValueColumnWidth column_width="97"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="106" />
+   <WVObjectSize size="166" />
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/sys_clock">
       <obj_property name="ElementShortName">sys_clock</obj_property>
       <obj_property name="ObjectShortName">sys_clock</obj_property>
@@ -52,6 +52,246 @@
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/deviceresetn">
       <obj_property name="ElementShortName">deviceresetn</obj_property>
       <obj_property name="ObjectShortName">deviceresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider150" type="divider">
+      <obj_property name="label">spiw</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/srst">
+      <obj_property name="ElementShortName">srst</obj_property>
+      <obj_property name="ObjectShortName">srst</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/din">
+      <obj_property name="ElementShortName">din[7:0]</obj_property>
+      <obj_property name="ObjectShortName">din[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/wr_en">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/rd_en">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/dout">
+      <obj_property name="ElementShortName">dout[7:0]</obj_property>
+      <obj_property name="ObjectShortName">dout[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/full">
+      <obj_property name="ElementShortName">full</obj_property>
+      <obj_property name="ObjectShortName">full</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/empty">
+      <obj_property name="ElementShortName">empty</obj_property>
+      <obj_property name="ObjectShortName">empty</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardWriteFifo/valid">
+      <obj_property name="ElementShortName">valid</obj_property>
+      <obj_property name="ObjectShortName">valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider181" type="divider">
+      <obj_property name="label">spir</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/srst">
+      <obj_property name="ElementShortName">srst</obj_property>
+      <obj_property name="ObjectShortName">srst</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/din">
+      <obj_property name="ElementShortName">din[7:0]</obj_property>
+      <obj_property name="ObjectShortName">din[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/wr_en">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/rd_en">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/dout">
+      <obj_property name="ElementShortName">dout[7:0]</obj_property>
+      <obj_property name="ObjectShortName">dout[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/full">
+      <obj_property name="ElementShortName">full</obj_property>
+      <obj_property name="ObjectShortName">full</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/empty">
+      <obj_property name="ElementShortName">empty</obj_property>
+      <obj_property name="ObjectShortName">empty</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardReadFifo/valid">
+      <obj_property name="ElementShortName">valid</obj_property>
+      <obj_property name="ObjectShortName">valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider180" type="divider">
+      <obj_property name="label">SPICTL</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/CLK">
+      <obj_property name="ElementShortName">CLK</obj_property>
+      <obj_property name="ObjectShortName">CLK</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/RST">
+      <obj_property name="ElementShortName">RST</obj_property>
+      <obj_property name="ObjectShortName">RST</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/SCLK">
+      <obj_property name="ElementShortName">SCLK</obj_property>
+      <obj_property name="ObjectShortName">SCLK</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/CS_N">
+      <obj_property name="ElementShortName">CS_N[0:0]</obj_property>
+      <obj_property name="ObjectShortName">CS_N[0:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/MOSI">
+      <obj_property name="ElementShortName">MOSI</obj_property>
+      <obj_property name="ObjectShortName">MOSI</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/MISO">
+      <obj_property name="ElementShortName">MISO</obj_property>
+      <obj_property name="ObjectShortName">MISO</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIN">
+      <obj_property name="ElementShortName">DIN[7:0]</obj_property>
+      <obj_property name="ObjectShortName">DIN[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIN_ADDR">
+      <obj_property name="ElementShortName">DIN_ADDR[-1:0]</obj_property>
+      <obj_property name="ObjectShortName">DIN_ADDR[-1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIN_LAST">
+      <obj_property name="ElementShortName">DIN_LAST</obj_property>
+      <obj_property name="ObjectShortName">DIN_LAST</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIN_VLD">
+      <obj_property name="ElementShortName">DIN_VLD</obj_property>
+      <obj_property name="ObjectShortName">DIN_VLD</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIN_RDY">
+      <obj_property name="ElementShortName">DIN_RDY</obj_property>
+      <obj_property name="ObjectShortName">DIN_RDY</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DOUT">
+      <obj_property name="ElementShortName">DOUT[7:0]</obj_property>
+      <obj_property name="ObjectShortName">DOUT[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DOUT_VLD">
+      <obj_property name="ElementShortName">DOUT_VLD</obj_property>
+      <obj_property name="ObjectShortName">DOUT_VLD</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/addr_reg">
+      <obj_property name="ElementShortName">addr_reg[-1:0]</obj_property>
+      <obj_property name="ObjectShortName">addr_reg[-1:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/sys_clk_cnt">
+      <obj_property name="ElementShortName">sys_clk_cnt[2:0]</obj_property>
+      <obj_property name="ObjectShortName">sys_clk_cnt[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/sys_clk_cnt_max">
+      <obj_property name="ElementShortName">sys_clk_cnt_max</obj_property>
+      <obj_property name="ObjectShortName">sys_clk_cnt_max</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/spi_clk">
+      <obj_property name="ElementShortName">spi_clk</obj_property>
+      <obj_property name="ObjectShortName">spi_clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/spi_clk_rst">
+      <obj_property name="ElementShortName">spi_clk_rst</obj_property>
+      <obj_property name="ObjectShortName">spi_clk_rst</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/din_last_reg_n">
+      <obj_property name="ElementShortName">din_last_reg_n</obj_property>
+      <obj_property name="ObjectShortName">din_last_reg_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/first_edge_en">
+      <obj_property name="ElementShortName">first_edge_en</obj_property>
+      <obj_property name="ObjectShortName">first_edge_en</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/second_edge_en">
+      <obj_property name="ElementShortName">second_edge_en</obj_property>
+      <obj_property name="ObjectShortName">second_edge_en</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/chip_select_n">
+      <obj_property name="ElementShortName">chip_select_n</obj_property>
+      <obj_property name="ObjectShortName">chip_select_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/load_data">
+      <obj_property name="ElementShortName">load_data</obj_property>
+      <obj_property name="ObjectShortName">load_data</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/miso_reg">
+      <obj_property name="ElementShortName">miso_reg</obj_property>
+      <obj_property name="ObjectShortName">miso_reg</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/shreg">
+      <obj_property name="ElementShortName">shreg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">shreg[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/bit_cnt">
+      <obj_property name="ElementShortName">bit_cnt[2:0]</obj_property>
+      <obj_property name="ObjectShortName">bit_cnt[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/bit_cnt_max">
+      <obj_property name="ElementShortName">bit_cnt_max</obj_property>
+      <obj_property name="ObjectShortName">bit_cnt_max</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/rx_data_vld">
+      <obj_property name="ElementShortName">rx_data_vld</obj_property>
+      <obj_property name="ObjectShortName">rx_data_vld</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/master_ready">
+      <obj_property name="ElementShortName">master_ready</obj_property>
+      <obj_property name="ObjectShortName">master_ready</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/present_state">
+      <obj_property name="ElementShortName">present_state</obj_property>
+      <obj_property name="ObjectShortName">present_state</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/next_state">
+      <obj_property name="ElementShortName">next_state</obj_property>
+      <obj_property name="ObjectShortName">next_state</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/CLK_FREQ">
+      <obj_property name="ElementShortName">CLK_FREQ</obj_property>
+      <obj_property name="ObjectShortName">CLK_FREQ</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/SCLK_FREQ">
+      <obj_property name="ElementShortName">SCLK_FREQ</obj_property>
+      <obj_property name="ObjectShortName">SCLK_FREQ</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/WORD_SIZE">
+      <obj_property name="ElementShortName">WORD_SIZE</obj_property>
+      <obj_property name="ObjectShortName">WORD_SIZE</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/SLAVE_COUNT">
+      <obj_property name="ElementShortName">SLAVE_COUNT</obj_property>
+      <obj_property name="ObjectShortName">SLAVE_COUNT</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/DIVIDER_VALUE">
+      <obj_property name="ElementShortName">DIVIDER_VALUE</obj_property>
+      <obj_property name="ObjectShortName">DIVIDER_VALUE</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/WIDTH_CLK_CNT">
+      <obj_property name="ElementShortName">WIDTH_CLK_CNT</obj_property>
+      <obj_property name="ObjectShortName">WIDTH_CLK_CNT</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/WIDTH_ADDR">
+      <obj_property name="ElementShortName">WIDTH_ADDR</obj_property>
+      <obj_property name="ObjectShortName">WIDTH_ADDR</obj_property>
+   </wvobject>
+   <wvobject type="other" fp_name="/nekosansimtop/simtop/SystemBus/SDCardController/BIT_CNT_WIDTH">
+      <obj_property name="ElementShortName">BIT_CNT_WIDTH</obj_property>
+      <obj_property name="ObjectShortName">BIT_CNT_WIDTH</obj_property>
    </wvobject>
    <wvobject fp_name="divider30" type="divider">
       <obj_property name="label">BUS</obj_property>
@@ -126,8 +366,8 @@
       <obj_property name="ObjectShortName">ctag[14:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/cline">
-      <obj_property name="ElementShortName">cline[8:0]</obj_property>
-      <obj_property name="ObjectShortName">cline[8:0]</obj_property>
+      <obj_property name="ElementShortName">cline[7:0]</obj_property>
+      <obj_property name="ObjectShortName">cline[7:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/coffset">
       <obj_property name="ElementShortName">coffset[2:0]</obj_property>
@@ -142,8 +382,8 @@
       <obj_property name="ObjectShortName">oldtag[15:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/cachetags">
-      <obj_property name="ElementShortName">cachetags[0:511][15:0]</obj_property>
-      <obj_property name="ObjectShortName">cachetags[0:511][15:0]</obj_property>
+      <obj_property name="ElementShortName">cachetags[0:255][15:0]</obj_property>
+      <obj_property name="ObjectShortName">cachetags[0:255][15:0]</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/loadindex">
       <obj_property name="ElementShortName">loadindex</obj_property>
@@ -169,9 +409,9 @@
       <obj_property name="ElementShortName">busdata[31:0]</obj_property>
       <obj_property name="ObjectShortName">busdata[31:0]</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/instruction">
-      <obj_property name="ElementShortName">instruction</obj_property>
-      <obj_property name="ObjectShortName">instruction</obj_property>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/instruction">
+      <obj_property name="ElementShortName">instruction[31:0]</obj_property>
+      <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/regdata">
       <obj_property name="ElementShortName">regdata[31:0]</obj_property>
@@ -226,8 +466,8 @@
       <obj_property name="ObjectShortName">val2[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/IntegerALU/aluop">
-      <obj_property name="ElementShortName">aluop[4:0]</obj_property>
-      <obj_property name="ObjectShortName">aluop[4:0]</obj_property>
+      <obj_property name="ElementShortName">aluop[3:0]</obj_property>
+      <obj_property name="ObjectShortName">aluop[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider260" type="divider">
       <obj_property name="label">BALU</obj_property>
@@ -250,8 +490,8 @@
       <obj_property name="ObjectShortName">val2[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/BranchALU/bluop">
-      <obj_property name="ElementShortName">bluop[4:0]</obj_property>
-      <obj_property name="ObjectShortName">bluop[4:0]</obj_property>
+      <obj_property name="ElementShortName">bluop[3:0]</obj_property>
+      <obj_property name="ObjectShortName">bluop[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider102" type="divider">
       <obj_property name="label">DECODER</obj_property>
@@ -266,8 +506,8 @@
       <obj_property name="ObjectShortName">opcode[4:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/InstructionDecoder/aluop">
-      <obj_property name="ElementShortName">aluop[4:0]</obj_property>
-      <obj_property name="ObjectShortName">aluop[4:0]</obj_property>
+      <obj_property name="ElementShortName">aluop[3:0]</obj_property>
+      <obj_property name="ObjectShortName">aluop[3:0]</obj_property>
    </wvobject>
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/InstructionDecoder/rwen">
       <obj_property name="ElementShortName">rwen</obj_property>
@@ -360,7 +600,6 @@
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/rv32iregisters/registers">
       <obj_property name="ElementShortName">registers[0:31][31:0]</obj_property>
       <obj_property name="ObjectShortName">registers[0:31][31:0]</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject fp_name="divider903" type="divider">
       <obj_property name="label">DDR3</obj_property>

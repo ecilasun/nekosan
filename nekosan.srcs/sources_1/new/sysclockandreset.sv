@@ -1,31 +1,12 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 08/08/2021 05:58:02 AM
-// Design Name: 
-// Module Name: sysclockandreset
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module sysclockandreset(
 	input wire sys_clock,
 	output wire clk25,
 	output wire clk100,
 	output wire clk120,
-	output wire clk150,
+	output wire clk50,
+	output wire cpuclock,
 	output wire sys_clk_in,
 	output wire ddr3_ref,
 	output logic devicereset = 1'b1 );
@@ -37,7 +18,8 @@ coreclock CentralClockGen(
 	.clk25(clk25),
 	.clk100(clk100),
 	.clk120(clk120),
-	.clk150(clk150),
+	.clk50(clk50),
+	.cpuclock(cpuclock),
 	.locked(clklocked) );
 
 ddr3clock DDR3MemClockGen(
