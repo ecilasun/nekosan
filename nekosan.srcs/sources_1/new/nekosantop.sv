@@ -33,7 +33,24 @@ module nekosantop(
 	input spi_miso,
 	output spi_sck,
 	//inout [1:0] dat, // UNUSED
-	input spi_cd );
+	input spi_cd,
+	// Switches/buttons
+	input [3:0] switches,
+	input [3:0] buttons,
+	// LEDs
+	output led0_b,
+	output led0_g,
+	output led0_r,
+	output led1_b,
+	output led1_g,
+	output led1_r,
+	output led2_b,
+	output led2_g,
+	output led2_r,
+	output led3_b,
+	output led3_g,
+	output led3_r,
+	output [3:0] leds );
 
 // ----------------------------------------------------------------------------
 // Clock and reset logic
@@ -108,7 +125,12 @@ sysbus SystemBus(
 	.spi_mosi(spi_mosi),
 	.spi_miso(spi_miso),
 	.spi_sck(spi_sck),
-	.spi_cd(spi_cd) );
+	.spi_cd(spi_cd),
+	// Switches/buttons
+	.switches({spi_cd, switches}),
+	.buttons(buttons),
+	// LEDs
+	.leds({led0_b, led0_g, led0_r, led1_b, led1_g, led1_r, led2_b, led2_g, led2_r, led3_b, led3_g, led3_r, leds}) );
 
 // ----------------------------------------------------------------------------
 // CPU

@@ -40,7 +40,11 @@ module sysbus(
 	output spi_mosi,
 	input spi_miso,
 	output spi_sck,
-	input spi_cd );
+	input spi_cd,
+	// Switches/buttons
+	input [4:0] switches,
+	input [3:0] buttons,
+	output logic [15:0] leds = 32'd0 );
 
 // ----------------------------------------------------------------------------
 // Data select
@@ -49,9 +53,13 @@ module sysbus(
 logic [31:0] dataout = 32'd0;
 assign busdata = (|buswe) ? 32'dz : dataout;
 
+// Direct access device data
+logic [15:0] leddata = 16'd0;
+
 // ----------------------------------------------------------------------------
 // Device ID
 // ----------------------------------------------------------------------------
+localparam DEV_LEDRW			= 10;
 localparam DEV_AUDIOSTREAMOUT	= 9;
 localparam DEV_SWITCHCOUNT		= 8;
 localparam DEV_SWITCHES			= 7;
@@ -63,18 +71,74 @@ localparam DEV_ARAM				= 2;
 localparam DEV_GRAM				= 1;
 localparam DEV_DDR3				= 0;
 
-wire [9:0] deviceSelect = {
+wire [10:0] deviceSelect = {
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0111 ? 1'b1 : 1'b0,	// 0A: 0x8xxxxx1C LED read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0110 ? 1'b1 : 1'b0,	// 09: 0x8xxxxx18 Raw audio output port				-
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0101 ? 1'b1 : 1'b0,	// 08: 0x8xxxxx14 Switch incoming queue byte count	-
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0100 ? 1'b1 : 1'b0,	// 07: 0x8xxxxx10 Device switch states				-
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0101 ? 1'b1 : 1'b0,	// 08: 0x8xxxxx14 Switch incoming queue byte ready	+
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0100 ? 1'b1 : 1'b0,	// 07: 0x8xxxxx10 Device switch states				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0011 ? 1'b1 : 1'b0,	// 06: 0x8xxxxx0C SPI read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0010 ? 1'b1 : 1'b0,	// 05: 0x8xxxxx08 UART read/write port				+
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0001 ? 1'b1 : 1'b0,	// 04: 0x8xxxxx04 UART incoming queue byte count	+
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0001 ? 1'b1 : 1'b0,	// 04: 0x8xxxxx04 UART incoming queue byte ready	+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0000 ? 1'b1 : 1'b0,	// 03: 0x8xxxxx00 GPU command queue					-
 	(busaddress[31:28]==4'b0010) ? 1'b1 : 1'b0,							// 02: 0x20000000 - 0x2FFFFFFF - ARAM				+
 	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - GRAM				-
 	(busaddress[31:28]==4'b0000) ? 1'b1 : 1'b0							// 00: 0x00000000 - 0x0FFFFFFF (DDR3 - 256Mbytes)	+
 };
+
+// ----------------------------------------------------------------------------
+// Switches + Buttons
+// ----------------------------------------------------------------------------
+
+wire switchfull, switchempty;
+logic [8:0] switchdatain;
+wire [8:0] switchdataout;
+wire switchvalid;
+logic switchwe=1'b0;
+logic switchre=1'b0;
+
+switchfifo DeviceSwitchStates(
+	// In
+	.full(switchfull),
+	.din(switchdatain),
+	.wr_en(switchwe),
+	.wr_clk(clk25),
+	// Out
+	.empty(switchempty),
+	.dout(switchdataout),
+	.rd_en(switchre),
+	.rd_clk(clock),
+	.valid(switchvalid),
+	// Ctl
+	.rst(~resetn) );
+
+logic [8:0] prevswitchstate = 9'h00;
+logic [8:0] interswitchstate = 9'h00;
+logic [8:0] newswitchstate = 9'h00;
+wire [8:0] currentswitchstate = {buttons, switches};
+
+always @(posedge clk25) begin
+	if (~resetn) begin
+
+		prevswitchstate <= currentswitchstate;
+
+	end else begin
+
+		switchwe <= 1'b0;
+
+		// Pipelined action
+		interswitchstate <= currentswitchstate;
+		newswitchstate <= interswitchstate;
+
+		// Check if switch states have changed 
+		if ((newswitchstate != prevswitchstate) & (~switchfull)) begin
+			// Save previous state, and push switch state onto stack
+			prevswitchstate <= newswitchstate;
+			// Stash switch states into fifo
+			switchwe <= 1'b1;
+			switchdatain <= newswitchstate;
+		end
+	end
+end
 
 // ----------------------------------------------------------------------------
 // SD Card Controller
@@ -532,28 +596,13 @@ end
 // ----------------------------------------------------------------------------
 
 always @(posedge clock) begin
-	// Assume nothing set
-	IRQ_BITS <= 3'b000;
-
 	// Keeps forcing interrupts until the FIFOs are empty
-
-	// UART input fifo will trigger external interrupt when not drained
 	// Handler should try to drain the fifo at least up to FIFO size items
-	// but doesn't need to over-drain as more data is coming in
-	if (~uartrcvempty) begin
-		IRQ_BITS[0] <= 1'b1;	// UARTRX
-	end
-	
-	if (~spirempty) begin
-		IRQ_BITS[1] <= 1'b1;	// SPIRX
-	end
-
-	// Device switch state queue will trigger external interrupt when not drained
-	// Handler should try to drain the fifo at least up to FIFO size items
-	// but doesn't need to over-drain as more data is coming in
-	/*if (~switchempty) begin
-		IRQ_BITS[2] <= 1'b1;	// SWITCHES/SLIDERS
-	end*/
+	// but doesn't need to over-drain as it will re-trigger next chance
+	// as long as the fifo has entries
+	IRQ_BITS[0] <= ~uartrcvempty;	// UARTRX
+	IRQ_BITS[1] <= ~spirempty;		// SPIRX
+	IRQ_BITS[2] <= ~switchempty;	// SWITCHES/SLIDERS
 end
 
 // ----------------------------------------------------------------------------
@@ -602,6 +651,7 @@ localparam BUS_DDR3UPDATECACHELINE	= 9;
 localparam BUS_UPDATEFINALIZE		= 10;
 localparam BUS_UARTRETIRE			= 11;
 localparam BUS_SPIRETIRE			= 12;
+localparam BUS_SWITCHRETIRE			= 13;
 
 logic [3:0] busmode = BUS_INIT;
 logic [31:0] ddr3wdat = 32'd0;
@@ -671,6 +721,10 @@ always @(posedge clock) begin
 							spiwdin <= busdata[7:0];
 							busmode <= BUS_WRITE;
 						end
+						deviceSelect[DEV_LEDRW]: begin
+							leddata <= busdata[15:0];
+							busmode <= BUS_WRITE;
+						end
 					endcase
 				end
 
@@ -690,7 +744,16 @@ always @(posedge clock) begin
 						deviceSelect[DEV_SPIRW]: begin
 							busmode <= BUS_READ;
 						end
+						deviceSelect[DEV_SWITCHES]: begin
+							busmode <= BUS_READ;
+						end
 						deviceSelect[DEV_UARTCOUNT]: begin
+							busmode <= BUS_READ;
+						end
+						deviceSelect[DEV_SWITCHCOUNT]: begin
+							busmode <= BUS_READ;
+						end
+						deviceSelect[DEV_LEDRW]: begin
 							busmode <= BUS_READ;
 						end
 					endcase
@@ -752,9 +815,26 @@ always @(posedge clock) begin
 							busmode <= BUS_READ;
 						end
 					end
+					deviceSelect[DEV_SWITCHES]: begin
+						if(~switchempty) begin
+							switchre <= 1'b1;
+							busmode <= BUS_SWITCHRETIRE;
+						end else begin
+							dataout <= {23'd0, newswitchstate};
+							busmode <= BUS_IDLE;
+						end
+					end
 					deviceSelect[DEV_UARTCOUNT]: begin
 						// Suffices to pass out zero or one, actual count doesn't matter
 						dataout <= {31'd0, ~uartrcvempty};
+						busmode <= BUS_IDLE;
+					end
+					deviceSelect[DEV_SWITCHCOUNT]: begin
+						dataout <= {31'd0, ~switchempty};
+						busmode <= BUS_IDLE;
+					end
+					deviceSelect[DEV_LEDRW]: begin
+						dataout <= {16'd0, leds};
 						busmode <= BUS_IDLE;
 					end
 				endcase
@@ -810,6 +890,10 @@ always @(posedge clock) begin
 							busmode <= BUS_WRITE; // Stall until fifo's empty
 						end
 					end
+					deviceSelect[DEV_LEDRW]: begin
+						leds <= leddata;
+						busmode <= BUS_IDLE;
+					end
 				endcase
 			end
 			
@@ -835,6 +919,16 @@ always @(posedge clock) begin
 					busmode <= BUS_IDLE;
 				end else begin
 					busmode <= BUS_SPIRETIRE;
+				end
+			end
+			
+			BUS_SWITCHRETIRE: begin
+				switchre <= 1'b0;
+				if (switchvalid) begin
+					dataout <= {23'd0, switchdataout};
+					busmode <= BUS_IDLE;
+				end else begin
+					busmode <= BUS_SWITCHRETIRE;
 				end
 			end
 

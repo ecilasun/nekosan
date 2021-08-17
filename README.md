@@ -15,11 +15,11 @@ This version implements the following:
   - Cycle/Wallclock and some other utility CSRs (machine interrupt control/pending etc) implemented
 - SDCard support
   - Via SPI interface
+- On-board switch / LED I/O
+  - Using memory mapped I/O mechanism
 
 
 ## TODO
-- On-board switch and LED I/O support
-  - Same memory mapped I/O mechanism as before
 - Audio output support
   - Same i2s device as before
 - Video output support
