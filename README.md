@@ -13,13 +13,13 @@ This version implements the following:
 - Implements the minimal RV32IZicsr set of RISC-V architecture
   - Machine Software/Timer/External interrupt support
   - Cycle/Wallclock and some other utility CSRs (machine interrupt control/pending etc) implemented
+- SDCard support
+  - Via SPI interface
 
 
 ## TODO
 - On-board switch and LED I/O support
   - Same memory mapped I/O mechanism as before
-- SDCard support
-  - SPI interface
 - Audio output support
   - Same i2s device as before
 - Video output support
