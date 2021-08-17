@@ -11,15 +11,15 @@
       </db_ref>
    </db_ref_list>
    <zoom_setting>
-      <ZoomStartTime time="273.333334 ns"></ZoomStartTime>
-      <ZoomEndTime time="4,397.333335 ns"></ZoomEndTime>
-      <Cursor1Time time="1,000.000000 ns"></Cursor1Time>
+      <ZoomStartTime time="35.311667166 us"></ZoomStartTime>
+      <ZoomEndTime time="448.911667167 us"></ZoomEndTime>
+      <Cursor1Time time="230.111667166 us"></Cursor1Time>
    </zoom_setting>
    <column_width_setting>
       <NameColumnWidth column_width="246"></NameColumnWidth>
-      <ValueColumnWidth column_width="118"></ValueColumnWidth>
+      <ValueColumnWidth column_width="112"></ValueColumnWidth>
    </column_width_setting>
-   <WVObjectSize size="168" />
+   <WVObjectSize size="188" />
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/sys_clock">
       <obj_property name="ElementShortName">sys_clock</obj_property>
       <obj_property name="ObjectShortName">sys_clock</obj_property>
@@ -44,9 +44,97 @@
       <obj_property name="ElementShortName">clk100</obj_property>
       <obj_property name="ObjectShortName">clk100</obj_property>
    </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/clk120">
+      <obj_property name="ElementShortName">clk120</obj_property>
+      <obj_property name="ObjectShortName">clk120</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/clk50">
+      <obj_property name="ElementShortName">clk50</obj_property>
+      <obj_property name="ObjectShortName">clk50</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/cpuclock">
+      <obj_property name="ElementShortName">cpuclock</obj_property>
+      <obj_property name="ObjectShortName">cpuclock</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/audiocore">
+      <obj_property name="ElementShortName">audiocore</obj_property>
+      <obj_property name="ObjectShortName">audiocore</obj_property>
+   </wvobject>
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/deviceresetn">
       <obj_property name="ElementShortName">deviceresetn</obj_property>
       <obj_property name="ObjectShortName">deviceresetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider173" type="divider">
+      <obj_property name="label">audio</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/cpuclock">
+      <obj_property name="ElementShortName">cpuclock</obj_property>
+      <obj_property name="ObjectShortName">cpuclock</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/audioclock">
+      <obj_property name="ElementShortName">audioclock</obj_property>
+      <obj_property name="ObjectShortName">audioclock</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/abempty">
+      <obj_property name="ElementShortName">abempty</obj_property>
+      <obj_property name="ObjectShortName">abempty</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/abvalid">
+      <obj_property name="ElementShortName">abvalid</obj_property>
+      <obj_property name="ObjectShortName">abvalid</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/audiore">
+      <obj_property name="ElementShortName">audiore</obj_property>
+      <obj_property name="ObjectShortName">audiore</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/leftrightchannels">
+      <obj_property name="ElementShortName">leftrightchannels[31:0]</obj_property>
+      <obj_property name="ObjectShortName">leftrightchannels[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_mclk">
+      <obj_property name="ElementShortName">tx_mclk</obj_property>
+      <obj_property name="ObjectShortName">tx_mclk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_lrck">
+      <obj_property name="ElementShortName">tx_lrck</obj_property>
+      <obj_property name="ObjectShortName">tx_lrck</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_sclk">
+      <obj_property name="ElementShortName">tx_sclk</obj_property>
+      <obj_property name="ObjectShortName">tx_sclk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_sdout">
+      <obj_property name="ElementShortName">tx_sdout</obj_property>
+      <obj_property name="ObjectShortName">tx_sdout</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/count">
+      <obj_property name="ElementShortName">count[8:0]</obj_property>
+      <obj_property name="ObjectShortName">count[8:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/lrck">
+      <obj_property name="ElementShortName">lrck</obj_property>
+      <obj_property name="ObjectShortName">lrck</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/sclk">
+      <obj_property name="ElementShortName">sclk</obj_property>
+      <obj_property name="ObjectShortName">sclk</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_data_l">
+      <obj_property name="ElementShortName">tx_data_l[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_data_l[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_data_r">
+      <obj_property name="ElementShortName">tx_data_r[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_data_r[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_data_l_shift">
+      <obj_property name="ElementShortName">tx_data_l_shift[23:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_data_l_shift[23:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/soundoutput/tx_data_r_shift">
+      <obj_property name="ElementShortName">tx_data_r_shift[23:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_data_r_shift[23:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider150" type="divider">
       <obj_property name="label">spiw</obj_property>
@@ -351,6 +439,73 @@
    <wvobject type="array" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect">
       <obj_property name="ElementShortName">deviceSelect[10:0]</obj_property>
       <obj_property name="ObjectShortName">deviceSelect[10:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[10]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[10]</obj_property>
+         <obj_property name="ObjectShortName">[10]</obj_property>
+         <obj_property name="label">[10] - LEDs</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[9]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[9]</obj_property>
+         <obj_property name="ObjectShortName">[9]</obj_property>
+         <obj_property name="label">[9] - AUDIOOUT</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[8]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[8]</obj_property>
+         <obj_property name="ObjectShortName">[8]</obj_property>
+         <obj_property name="label">[8] - SWTCHRDY</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[7]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[7]</obj_property>
+         <obj_property name="ObjectShortName">[7]</obj_property>
+         <obj_property name="label">[7] - SWTCH</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[6]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[6]</obj_property>
+         <obj_property name="ObjectShortName">[6]</obj_property>
+         <obj_property name="label">[6] - SPI</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[5]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[5]</obj_property>
+         <obj_property name="ObjectShortName">[5]</obj_property>
+         <obj_property name="label">[5] - UART</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[4]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[4]</obj_property>
+         <obj_property name="ObjectShortName">[4]</obj_property>
+         <obj_property name="label">[4] - UARTRDY</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[3]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[3]</obj_property>
+         <obj_property name="ObjectShortName">[3]</obj_property>
+         <obj_property name="label">[3] - GPUFIFO</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[2]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[2]</obj_property>
+         <obj_property name="ObjectShortName">[2]</obj_property>
+         <obj_property name="label">[2] - ARAM</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[1]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[1]</obj_property>
+         <obj_property name="ObjectShortName">[1]</obj_property>
+         <obj_property name="label">[1] - GRAM</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/deviceSelect[0]">
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="ElementShortName">[0]</obj_property>
+         <obj_property name="ObjectShortName">[0]</obj_property>
+         <obj_property name="label">[0] - DDR3</obj_property>
+      </wvobject>
    </wvobject>
    <wvobject fp_name="divider108" type="divider">
       <obj_property name="label">CACHE</obj_property>
@@ -408,17 +563,11 @@
       <obj_property name="ElementShortName">instruction[31:0]</obj_property>
       <obj_property name="ObjectShortName">instruction[31:0]</obj_property>
    </wvobject>
-   <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/is_compressed">
-      <obj_property name="ElementShortName">is_compressed</obj_property>
-      <obj_property name="ObjectShortName">is_compressed</obj_property>
-   </wvobject>
-   <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/decodedinstruction">
-      <obj_property name="ElementShortName">decodedinstruction[31:0]</obj_property>
-      <obj_property name="ObjectShortName">decodedinstruction[31:0]</obj_property>
-   </wvobject>
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/CPU0/illegalinstruction">
       <obj_property name="ElementShortName">illegalinstruction</obj_property>
       <obj_property name="ObjectShortName">illegalinstruction</obj_property>
+      <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/regdata">
       <obj_property name="ElementShortName">regdata[31:0]</obj_property>
@@ -449,8 +598,8 @@
       <obj_property name="ObjectShortName">nextPC[31:0]</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/simtop/CPU0/cpustate">
-      <obj_property name="ElementShortName">cpustate[7:0]</obj_property>
-      <obj_property name="ObjectShortName">cpustate[7:0]</obj_property>
+      <obj_property name="ElementShortName">cpustate[8:0]</obj_property>
+      <obj_property name="ObjectShortName">cpustate[8:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider259" type="divider">
       <obj_property name="label">IALU</obj_property>
@@ -615,6 +764,8 @@
    <wvobject type="logic" fp_name="/nekosansimtop/simtop/SystemBus/calib_done">
       <obj_property name="ElementShortName">calib_done</obj_property>
       <obj_property name="ObjectShortName">calib_done</obj_property>
+      <obj_property name="CustomSignalColor">#FF00FF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
    </wvobject>
    <wvobject type="array" fp_name="/nekosansimtop/ddr3simmod/TZQCS">
       <obj_property name="ElementShortName">TZQCS[31:0]</obj_property>

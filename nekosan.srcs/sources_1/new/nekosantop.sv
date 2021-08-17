@@ -8,10 +8,10 @@
 module nekosantop(
 	// Input clock @100MHz
 	input sys_clock,
-	// UART device pins - USBUART
+	// UART device pins - ONBOARD
 	output wire uart_rxd_out,
 	input wire uart_txd_in,
-    // DDR3 SDRAM device pins
+    // DDR3 SDRAM device - ONBOARD
     output          ddr3_reset_n,
     output  [0:0]   ddr3_cke,
     output  [0:0]   ddr3_ck_p, 
@@ -32,25 +32,21 @@ module nekosantop(
 	output spi_mosi,
 	input spi_miso,
 	output spi_sck,
-	//inout [1:0] dat, // UNUSED
 	input spi_cd,
-	// Switches/buttons
+	// Switches/buttons - ONBOARD
 	input [3:0] switches,
 	input [3:0] buttons,
-	// LEDs
-	output led0_b,
-	output led0_g,
-	output led0_r,
-	output led1_b,
-	output led1_g,
-	output led1_r,
-	output led2_b,
-	output led2_g,
-	output led2_r,
-	output led3_b,
-	output led3_g,
-	output led3_r,
-	output [3:0] leds );
+	// LEDs - ONBOARD
+	output led0_b, output led0_g, output led0_r,
+	output led1_b, output led1_g, output led1_r,
+	output led2_b, output led2_g, output led2_r,
+	output led3_b, output led3_g, output led3_r,
+	output [3:0] leds,
+	// I2S2 audio - PMOD D
+    output tx_mclk,
+    output tx_lrck,
+    output tx_sclk,
+    output tx_sdout );
 
 // ----------------------------------------------------------------------------
 // Clock and reset logic
@@ -58,7 +54,7 @@ module nekosantop(
 
 wire devicereset;
 wire clk25, clk100, clk120, clk50;
-wire sys_clk_in, clk200, cpuclock;
+wire sys_clk_in, clk200, cpuclock, audiocore;
 
 sysclockandreset SystemClockAndResetGen(
 	.sys_clock(sys_clock),
@@ -67,6 +63,7 @@ sysclockandreset SystemClockAndResetGen(
 	.clk120(clk120),
 	.clk50(clk50),
 	.cpuclock(cpuclock),
+	.audiocore(audiocore),
 	.sys_clk_in(sys_clk_in),
 	.ddr3_ref(clk200),
 	.devicereset(devicereset));
@@ -87,6 +84,7 @@ wire [2:0] IRQ_BITS;
 
 sysbus SystemBus(
 	.clock(cpuclock),
+	.audiocore(audiocore),
 	.clk25(clk25),
 	.clk50(clk50),
 	.resetn(deviceresetn),
@@ -130,7 +128,12 @@ sysbus SystemBus(
 	.switches({spi_cd, switches}),
 	.buttons(buttons),
 	// LEDs
-	.leds({led0_b, led0_g, led0_r, led1_b, led1_g, led1_r, led2_b, led2_g, led2_r, led3_b, led3_g, led3_r, leds}) );
+	.leds({led0_b, led0_g, led0_r, led1_b, led1_g, led1_r, led2_b, led2_g, led2_r, led3_b, led3_g, led3_r, leds}),
+	// Audio
+    .tx_mclk(tx_mclk),
+    .tx_lrck(tx_lrck),
+    .tx_sclk(tx_sclk),
+    .tx_sdout(tx_sdout) );
 
 // ----------------------------------------------------------------------------
 // CPU

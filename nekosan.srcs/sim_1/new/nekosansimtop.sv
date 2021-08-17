@@ -93,7 +93,18 @@ nekosantop simtop(
 	,.spi_mosi(spi_mosi)
 	,.spi_miso(spi_miso)
 	,.spi_sck(spi_sck)
-	,.spi_cd(spi_cd) );
+	,.spi_cd(spi_cd)
+	// LEDs
+	,.led0_b() ,.led0_g() ,.led0_r()
+	,.led1_b() ,.led1_g() ,.led1_r()
+	,.led2_b() ,.led2_g() ,.led2_r()
+	,.led3_b() ,.led3_g() ,.led3_r()
+	,.leds()
+	// I2S2 audio
+    ,.tx_mclk()
+    ,.tx_lrck()
+    ,.tx_sclk()
+    ,.tx_sdout() );
 
 // Feed a 100Mhz external clock to top module
 always begin

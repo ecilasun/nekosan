@@ -2,6 +2,7 @@
 
 module sysbus(
 	input wire clock,
+	input wire audiocore,
 	input wire clk25,
 	input wire clk50,
 	input wire resetn,
@@ -44,7 +45,12 @@ module sysbus(
 	// Switches/buttons
 	input [4:0] switches,
 	input [3:0] buttons,
-	output logic [15:0] leds = 32'd0 );
+	output logic [15:0] leds = 32'd0,
+	// I2S2 audio
+    output tx_mclk,
+    output tx_lrck,
+    output tx_sclk,
+    output tx_sdout );
 
 // ----------------------------------------------------------------------------
 // Data select
@@ -73,7 +79,7 @@ localparam DEV_DDR3				= 0;
 
 wire [10:0] deviceSelect = {
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0111 ? 1'b1 : 1'b0,	// 0A: 0x8xxxxx1C LED read/write port				+
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0110 ? 1'b1 : 1'b0,	// 09: 0x8xxxxx18 Raw audio output port				-
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0110 ? 1'b1 : 1'b0,	// 09: 0x8xxxxx18 Raw audio output port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0101 ? 1'b1 : 1'b0,	// 08: 0x8xxxxx14 Switch incoming queue byte ready	+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0100 ? 1'b1 : 1'b0,	// 07: 0x8xxxxx10 Device switch states				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0011 ? 1'b1 : 1'b0,	// 06: 0x8xxxxx0C SPI read/write port				+
@@ -84,6 +90,43 @@ wire [10:0] deviceSelect = {
 	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - GRAM				-
 	(busaddress[31:28]==4'b0000) ? 1'b1 : 1'b0							// 00: 0x00000000 - 0x0FFFFFFF (DDR3 - 256Mbytes)	+
 };
+
+// ----------------------------------------------------------------------------
+// Audio output FIFO
+// ----------------------------------------------------------------------------
+
+wire abfull, abempty, abvalid;
+logic [31:0] abdin = 32'd0;
+logic abwe = 1'b0;
+wire abre;
+wire [31:0] abdout;
+
+audiofifo AudioBuffer(
+	.wr_clk(clock),
+	.full(abfull),
+	.din(abdin),
+	.wr_en(abwe),
+	.rd_clk(audiocore),
+	.empty(abempty),
+	.dout(abdout),
+	.rd_en(abre),
+	.valid(abvalid),
+	.rst(~resetn) );
+
+i2s2audio soundoutput(
+	.cpuclock(clock),
+    .audioclock(audiocore),
+
+	.abempty(abempty),
+	.abvalid(abvalid),
+	.audiore(abre),
+    .leftrightchannels(abdout),	// Joint stereo DWORD input
+
+    .tx_mclk(tx_mclk),
+    .tx_lrck(tx_lrck),
+    .tx_sclk(tx_sclk),
+    .tx_sdout(tx_sdout) );
+
 
 // ----------------------------------------------------------------------------
 // Switches + Buttons
@@ -477,8 +520,8 @@ ddr3readdonequeue DDR3ReadDone(
 // ARAM
 // ----------------------------------------------------------------------------
 
-logic [13:0] aramaddr;
-logic [31:0] aramdin;
+logic [13:0] aramaddr = 14'd0;
+logic [31:0] aramdin = 32'd0;
 logic [3:0] aramwe = 4'h0;
 logic aramre = 1'b0;
 wire [31:0] aramdout;
@@ -679,7 +722,7 @@ always @(posedge clock) begin
 		aramre <= 1'b0;
 
 		case (busmode)
-		
+
 			BUS_INIT: begin
 				if (calib_done4) begin
 					busmode <= BUS_IDLE;
@@ -687,10 +730,11 @@ always @(posedge clock) begin
 			end
 
 			BUS_IDLE: begin
-			
-				// End previous UART/SPI writes
+
+				// End pending UART/SPI/Audio writes
 				uartsendwe <= 1'b0;
 				spiwwe <= 1'b0;
+				abwe <= 1'b0;
 
 				if (deviceSelect[DEV_DDR3] & (busre | (|buswe))) begin
 					currentcacheline <= cache[busaddress[12:5]];
@@ -699,6 +743,13 @@ always @(posedge clock) begin
 					ctag <= busaddress[27:13];
 					coffset <= busaddress[4:2];
 					cwidemask = {{8{buswe[3]}}, {8{buswe[2]}}, {8{buswe[1]}}, {8{buswe[0]}}};
+				end else begin
+					currentcacheline <= 256'd0;
+					oldtag <= 16'd0;
+					cline <= 8'd0;
+					ctag <= 15'd0;
+					coffset <= 3'd0;
+					cwidemask <= 32'd0;
 				end
 
 				if (|buswe) begin
@@ -723,6 +774,10 @@ always @(posedge clock) begin
 						end
 						deviceSelect[DEV_LEDRW]: begin
 							leddata <= busdata[15:0];
+							busmode <= BUS_WRITE;
+						end
+						deviceSelect[DEV_AUDIOSTREAMOUT]: begin
+							abdin <= busdata;
 							busmode <= BUS_WRITE;
 						end
 					endcase
@@ -879,7 +934,7 @@ always @(posedge clock) begin
 							uartsendwe <= 1'b1;
 							busmode <= BUS_IDLE;
 						end else begin
-							busmode <= BUS_WRITE; // Stall until fifo's empty
+							busmode <= BUS_WRITE; // Stall until UART fifo's empty
 						end
 					end
 					deviceSelect[DEV_SPIRW]: begin
@@ -887,16 +942,24 @@ always @(posedge clock) begin
 							spiwwe <= 1'b1;
 							busmode <= BUS_IDLE;
 						end else begin
-							busmode <= BUS_WRITE; // Stall until fifo's empty
+							busmode <= BUS_WRITE; // Stall until SPI fifo's empty
 						end
 					end
 					deviceSelect[DEV_LEDRW]: begin
 						leds <= leddata;
 						busmode <= BUS_IDLE;
 					end
+					deviceSelect[DEV_AUDIOSTREAMOUT]: begin
+						if (~abfull) begin
+							abwe <= 1'b1;
+							busmode <= BUS_IDLE;
+						end else begin
+							busmode <= BUS_WRITE; // Stall until audio fifo's empty
+						end
+					end
 				endcase
 			end
-			
+
 			BUS_UARTRETIRE: begin
 				uartrcvre <= 1'b0;
 				if (uartrcvvalid) begin
@@ -921,7 +984,7 @@ always @(posedge clock) begin
 					busmode <= BUS_SPIRETIRE;
 				end
 			end
-			
+
 			BUS_SWITCHRETIRE: begin
 				switchre <= 1'b0;
 				if (switchvalid) begin
@@ -936,7 +999,7 @@ always @(posedge clock) begin
 				dataout <= aramdout;
 				busmode <= BUS_IDLE;
 			end
-			
+
 			BUS_DDR3CACHESTOREHI: begin
 				ddr3cmdin <= {1'b1, oldtag[14:0], cline, 1'b1, currentcacheline[255:128]}; // STOREHI
 				ddr3cmdwe <= 1'b1;

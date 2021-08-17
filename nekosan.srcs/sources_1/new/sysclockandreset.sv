@@ -7,11 +7,12 @@ module sysclockandreset(
 	output wire clk120,
 	output wire clk50,
 	output wire cpuclock,
+	output wire audiocore,
 	output wire sys_clk_in,
 	output wire ddr3_ref,
 	output logic devicereset = 1'b1 );
 
-wire clklocked, ddr3clklocked;
+wire clkAlocked, clkBlocked, ddr3clklocked;
 
 coreclock CentralClockGen(
 	.clk_in1(sys_clock),
@@ -20,7 +21,12 @@ coreclock CentralClockGen(
 	.clk120(clk120),
 	.clk50(clk50),
 	.cpuclock(cpuclock),
-	.locked(clklocked) );
+	.locked(clkAlocked) );
+
+avclock AudioVideoClockGen(
+	.clk_in1(sys_clock),
+	.audiocore(audiocore),
+	.locked(clkBlocked) );
 
 ddr3clock DDR3MemClockGen(
 	.clk_in1(sys_clock),
@@ -29,7 +35,7 @@ ddr3clock DDR3MemClockGen(
 	.locked(ddr3clklocked));
 
 // Hold reset until clocks are locked
-wire internalreset = ~(clklocked & ddr3clklocked);
+wire internalreset = ~(clkAlocked & clkBlocked & ddr3clklocked);
 
 // Delayed reset post-clock-lock
 logic [7:0] resetcountdown = 8'hFF;
