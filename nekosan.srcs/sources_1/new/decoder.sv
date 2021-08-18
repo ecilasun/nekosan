@@ -111,7 +111,7 @@ always_comb begin
 			//nextstage = `CPURETIRE_MASK;
 		end
 
-		instrOneHot[`O_H_STORE]: begin
+		instrOneHot[`O_H_FLOAT_STW], instrOneHot[`O_H_STORE]: begin
 			immed = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]};
 			rwen = 1'b0;
 			fwen = 1'b0;
@@ -120,7 +120,7 @@ always_comb begin
 			//nextstage = `CPUSTORE_MASK;
 		end
 
-		/*instrOneHot[`O_H_FLOAT_LDW], */instrOneHot[`O_H_LOAD]: begin
+		instrOneHot[`O_H_FLOAT_LDW], instrOneHot[`O_H_LOAD]: begin
 			// NOTE: We have to write to a register, but will handle it in LOAD state not to cause double-writes
 			immed = {{20{instruction[31]}}, instruction[31:20]};
 			rwen = 1'b0;
@@ -206,7 +206,7 @@ always_comb begin
 			endcase*/
 		end
 
-		/*instrOneHot[`O_H_FLOAT_OP]: begin
+		instrOneHot[`O_H_FLOAT_OP]: begin
 			immed = 32'd0;
 			case (instruction[31:25])
 				`FADD,`FSUB,`FMUL,`FDIV,`FSGNJ,`FCVTWS,`FCVTSW,`FSQRT,`FEQ,`FMIN: begin // FCVTWUS and FCVTSWU implied by FCVTWS and FCVTSW, FSGNJ includes FSGNJN and FSGNJX, FEQ includes FLT and FLE, FMIN includes FMAX
@@ -237,14 +237,6 @@ always_comb begin
 			bluop = `ALU_NONE;
 			// Float writes are deferred to the end of CPUFFSTALL state
 		end
-
-		instrOneHot[`O_H_FLOAT_STW]: begin
-			immed = {{21{instruction[31]}}, instruction[30:25], instruction[11:7]};
-			rwen = 1'b0;
-			fwen = 1'b0;
-			aluop = `ALU_NONE;
-			bluop = `ALU_NONE;
-		end*/
 
 		default: begin
 			// NOTE: Removing this creates less LUTs but WNS gets lower

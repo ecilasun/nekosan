@@ -46,7 +46,15 @@ module nekosantop(
     output tx_mclk,
     output tx_lrck,
     output tx_sclk,
-    output tx_sdout );
+    output tx_sdout,
+	// DVI - PMOD A+B
+	output  [3:0]	DVI_R,
+	output  [3:0]	DVI_G,
+	output  [3:0]	DVI_B,
+	output			DVI_HS,
+	output			DVI_VS,
+	output			DVI_DE,
+	output			DVI_CLK );
 
 // ----------------------------------------------------------------------------
 // Clock and reset logic
@@ -87,6 +95,7 @@ sysbus SystemBus(
 	.audiocore(audiocore),
 	.clk25(clk25),
 	.clk50(clk50),
+	.gpuclock(clk100),
 	.resetn(deviceresetn),
 	// Bus / cache control
 	.busbusy(busbusy),
@@ -133,7 +142,15 @@ sysbus SystemBus(
     .tx_mclk(tx_mclk),
     .tx_lrck(tx_lrck),
     .tx_sclk(tx_sclk),
-    .tx_sdout(tx_sdout) );
+    .tx_sdout(tx_sdout),
+    // DVI
+	.DVI_R(DVI_R),
+	.DVI_G(DVI_G),
+	.DVI_B(DVI_B),
+	.DVI_HS(DVI_HS),
+	.DVI_VS(DVI_VS),
+	.DVI_DE(DVI_DE),
+	.DVI_CLK(DVI_CLK) );
 
 // ----------------------------------------------------------------------------
 // CPU

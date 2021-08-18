@@ -5,6 +5,7 @@ module sysbus(
 	input wire audiocore,
 	input wire clk25,
 	input wire clk50,
+	input wire gpuclock,
 	input wire resetn,
 	// Control
 	output wire busbusy,
@@ -50,7 +51,15 @@ module sysbus(
     output tx_mclk,
     output tx_lrck,
     output tx_sclk,
-    output tx_sdout );
+    output tx_sdout,
+	// DVI
+	output  [3:0]	DVI_R,
+	output  [3:0]	DVI_G,
+	output  [3:0]	DVI_B,
+	output			DVI_HS,
+	output			DVI_VS,
+	output			DVI_DE,
+	output			DVI_CLK );
 
 // ----------------------------------------------------------------------------
 // Data select
@@ -85,11 +94,211 @@ wire [10:0] deviceSelect = {
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0011 ? 1'b1 : 1'b0,	// 06: 0x8xxxxx0C SPI read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0010 ? 1'b1 : 1'b0,	// 05: 0x8xxxxx08 UART read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0001 ? 1'b1 : 1'b0,	// 04: 0x8xxxxx04 UART incoming queue byte ready	+
-	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0000 ? 1'b1 : 1'b0,	// 03: 0x8xxxxx00 GPU command queue					-
+	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0000 ? 1'b1 : 1'b0,	// 03: 0x8xxxxx00 GPU command queue					+
 	(busaddress[31:28]==4'b0010) ? 1'b1 : 1'b0,							// 02: 0x20000000 - 0x2FFFFFFF - ARAM				+
-	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - GRAM				-
+	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - GRAM				+
 	(busaddress[31:28]==4'b0000) ? 1'b1 : 1'b0							// 00: 0x00000000 - 0x0FFFFFFF (DDR3 - 256Mbytes)	+
 };
+
+// ----------------------------------------------------------------------------
+// Color palette
+// ----------------------------------------------------------------------------
+
+wire palettewe;
+wire [7:0] paletteaddress;
+wire [7:0] palettereadaddress;
+wire [23:0] palettedata;
+
+logic [23:0] paletteentries[0:255];
+
+// Set up with VGA color palette on startup
+initial begin
+	$readmemh("colorpalette.mem", paletteentries);
+end
+
+always @(posedge gpuclock) begin // Tied to GPU clock
+	if (palettewe)
+		paletteentries[paletteaddress] <= palettedata;
+end
+
+wire [23:0] paletteout;
+assign paletteout = paletteentries[palettereadaddress];
+
+// ----------------------------------------------------------------------------
+// Video units and DVI scan-out
+// ----------------------------------------------------------------------------
+
+// Ties to the GPU below, for GPU driven writes
+wire [14:0] gpuwriteaddress;
+wire [3:0] gpuwriteenable;
+wire [31:0] gpuwriteword;
+
+wire [11:0] video_x;
+wire [11:0] video_y;
+
+wire videopage;
+wire [7:0] PALETTEINDEX_ONE;
+wire [7:0] PALETTEINDEX_TWO;
+
+wire dataEnableA, dataEnableB;
+wire inDisplayWindowA, inDisplayWindowB;
+
+VideoControllerGen VideoUnitA(
+	.gpuclock(gpuclock),
+	.vgaclock(clk25),
+	.writesenabled(videopage),
+	.video_x(video_x),
+	.video_y(video_y),
+	// Wire input
+	.memaddress(gpuwriteaddress),
+	.mem_writeena(gpuwriteenable),
+	.writeword(gpuwriteword),
+	.lanemask(gpulanewritemask),
+	// Video output
+	.paletteindex(PALETTEINDEX_ONE),
+	.dataEnable(dataEnableA),
+	.inDisplayWindow(inDisplayWindowA) );
+
+VideoControllerGen VideoUnitB(
+	.gpuclock(gpuclock),
+	.vgaclock(clk25),
+	.writesenabled(~videopage),
+	.video_x(video_x),
+	.video_y(video_y),
+	// Wire input
+	.memaddress(gpuwriteaddress),
+	.mem_writeena(gpuwriteenable),
+	.writeword(gpuwriteword),
+	.lanemask(gpulanewritemask),
+	// Video output
+	.paletteindex(PALETTEINDEX_TWO),
+	.dataEnable(dataEnableB),
+	.inDisplayWindow(inDisplayWindowB) );
+
+wire vsync_we;
+wire [31:0] vsynccounter;
+logic [31:0] vsync_signal = 32'd0;
+
+wire dataEnable = videopage == 1'b0 ? dataEnableA : dataEnableB;
+wire inDisplayWindow = videopage == 1'b0 ? inDisplayWindowA : inDisplayWindowB;
+assign DVI_DE = dataEnable;
+assign palettereadaddress = (videopage == 1'b0) ? PALETTEINDEX_ONE : PALETTEINDEX_TWO;
+// TODO: Depending on video more, use palette out or the byte (PALETTEINDEX_ONE/PALETTEINDEX_TWO) as RGB color
+// May also want to introduce a secondary palette?
+wire [3:0] VIDEO_B = paletteout[7:4];
+wire [3:0] VIDEO_R = paletteout[15:12];
+wire [3:0] VIDEO_G = paletteout[23:20];
+
+// TODO: Border color
+assign DVI_R = inDisplayWindow ? (dataEnable ? VIDEO_R : 4'b0010) : 4'h0;
+assign DVI_G = inDisplayWindow ? (dataEnable ? VIDEO_G : 4'b0010) : 4'h0;
+assign DVI_B = inDisplayWindow ? (dataEnable ? VIDEO_B : 4'b0010) : 4'h0;
+assign DVI_CLK = clk25;
+
+videosignalgen VideoScanOut(
+	.rst_i(~resetn),
+	.clk_i(clk25),					// Video clock input for 640x480 image
+	.hsync_o(DVI_HS),				// DVI horizontal sync
+	.vsync_o(DVI_VS),				// DVI vertical sync
+	.counter_x(video_x),			// Video X position (in actual pixel units)
+	.counter_y(video_y),			// Video Y position
+	.vsynctrigger_o(vsync_we),		// High when we're OK to queue a VSYNC in FIFO
+	.vsynccounter(vsynccounter) );	// Each vsync has a unique marker so that we can wait for them by name
+
+// ----------------------------------------------------------------------------
+// GPU command FIFO
+// ----------------------------------------------------------------------------
+
+logic gfifowe = 1'b0;
+logic [31:0] gfifodin = 32'd0;
+wire gpu_fifowrfull;
+
+wire gpu_fifordempty;
+wire [31:0] gpu_fifodataout;
+wire gpu_fifodatavalid;
+wire gpu_fifore;
+
+gpufifo GPUCommands(
+	// Write - CPU
+	.full(gpu_fifowrfull),
+	.din(gfifodin),
+	.wr_en(gfifowe),
+	// Read - GPU
+	.empty(gpu_fifordempty),
+	.dout(gpu_fifodataout),
+	.rd_en(gpu_fifore),
+	.valid(gpu_fifodatavalid),
+	// Control
+	.wr_clk(clock),		// CPU
+	.rd_clk(gpuclock),	// GPU
+	.rst(~resetn) );
+
+// ----------------------------------------------------------------------------
+// GPU
+// ----------------------------------------------------------------------------
+
+// Write control to G-RAM
+wire [31:0] gramdmawriteaddress;
+wire [31:0] gramdmawriteword;
+wire [3:0] gramdmawriteenable;
+wire [31:0] gramdmadataout;
+
+gpu GraphicsProcessor(
+	.clock(gpuclock),
+	.reset(devicereset),
+	.vsync(vsync_signal),
+	.videopage(videopage),
+	// GPU command FIFO control wires
+	.fifoempty(gpu_fifordempty),
+	.fifodout(gpu_fifodataout),
+	.fiford_en(gpu_fifore),
+	.fifdoutvalid(gpu_fifodatavalid),
+	// VU0/1 direct writes
+	.vramaddress(gpuwriteaddress),
+	.vramwe(gpuwriteenable),
+	.vramwriteword(gpuwriteword),
+	//output logic [12:0] lanemask = 70'd0, // We need to pick tiles for simultaneous writes
+	// GRAM DMA channel
+	.dmaaddress(gramdmawriteaddress),
+	.dmawriteword(gramdmawriteword),
+	.dmawe(gramdmawriteenable),
+	.dma_data(gramdmadataout),
+	// Palette write
+	.palettewe(palettewe),
+	.paletteaddress(paletteaddress),
+	.palettedata(palettedata) );
+
+// ----------------------------------------------------------------------------
+// Domain crossing vsync
+// ----------------------------------------------------------------------------
+
+/*wire [31:0] vsync_fastdomain;
+wire vsyncfifoempty;
+wire vsyncfifovalid;
+
+logic vsync_re;
+DomainCrossSignalFifo GPUVGAVSyncQueue(
+	.full(),
+	.din(vsynccounter),
+	.wr_en(vsync_we),
+	.empty(vsyncfifoempty),
+	.dout(vsync_fastdomain),
+	.rd_en(vsync_re),
+	.wr_clk(vgaclock),
+	.rd_clk(gpuclock),
+	.rst(reset_p),
+	.valid(vsyncfifovalid) );
+
+// Drain the vsync fifo and set vsync signal for the GPU every time we find one
+always @(posedge gpuclock) begin
+	vsync_re <= 1'b0;
+	if (~vsyncfifoempty) begin
+		vsync_re <= 1'b1;
+	end
+	if (vsyncfifovalid) begin
+		vsync_signal <= vsync_fastdomain;
+	end
+end*/
 
 // ----------------------------------------------------------------------------
 // Audio output FIFO
@@ -126,7 +335,6 @@ i2s2audio soundoutput(
     .tx_lrck(tx_lrck),
     .tx_sclk(tx_sclk),
     .tx_sdout(tx_sdout) );
-
 
 // ----------------------------------------------------------------------------
 // Switches + Buttons
@@ -517,7 +725,7 @@ ddr3readdonequeue DDR3ReadDone(
 	.rd_rst_busy(done_rd_rst_busy) );
 
 // ----------------------------------------------------------------------------
-// ARAM
+// A-RAM
 // ----------------------------------------------------------------------------
 
 logic [13:0] aramaddr = 14'd0;
@@ -525,13 +733,39 @@ logic [31:0] aramdin = 32'd0;
 logic [3:0] aramwe = 4'h0;
 logic aramre = 1'b0;
 wire [31:0] aramdout;
-scratchpadmemory ARAM(
+scratchpadmemory AudioAndBootMemory(
 	.addra(aramaddr),
 	.clka(clock),
 	.dina(aramdin),
 	.douta(aramdout),
 	.ena((resetn) & (aramre | (|aramwe))),
 	.wea(aramwe) );
+	
+// ----------------------------------------------------------------------------
+// G-RAM
+// ----------------------------------------------------------------------------
+
+logic [13:0] gramaddr = 14'd0;
+logic [31:0] gramdin = 32'd0;
+wire [31:0] gramdout;
+logic [3:0] gramwe = 4'h0;
+logic gramre = 1'b0;
+
+GRAM GraphicsMemory(
+	// Port A - CPU access via CPU bus
+	.addra(gramaddr),	// 0x10000000-0x1FFFFFFFF (DWORD aligned, lower 2 bits dropped) - 64K usable
+	.clka(clock),
+	.dina(gramdin),
+	.douta(gramdout),
+	.ena(deviceSelect[DEV_GRAM] & (gramre | (|gramwe))), // Enable only when Device ID == GRAM ID
+	.wea(gramwe),
+	// Port B - GPU DMA access
+	.addrb(gramdmawriteaddress[15:2]), // 13:0
+	.clkb(gpuclock),
+	.dinb(gramdmawriteword),
+	.doutb(gramdmadataout),
+	.enb(1'b1), // Always enabled for GPU access
+	.web(gramdmawriteenable) );
 
 // ----------------------------------------------------------------------------
 // UART Transmitter
@@ -695,6 +929,7 @@ localparam BUS_UPDATEFINALIZE		= 10;
 localparam BUS_UARTRETIRE			= 11;
 localparam BUS_SPIRETIRE			= 12;
 localparam BUS_SWITCHRETIRE			= 13;
+localparam BUS_GRAMRETIRE			= 14;
 
 logic [3:0] busmode = BUS_INIT;
 logic [31:0] ddr3wdat = 32'd0;
@@ -718,8 +953,10 @@ always @(posedge clock) begin
 
 	end else begin
 
-		aramwe <= 1'b0;
+		aramwe <= 4'h0;
 		aramre <= 1'b0;
+		gramwe <= 4'h0;
+		gramre <= 1'b0;
 
 		case (busmode)
 
@@ -731,10 +968,11 @@ always @(posedge clock) begin
 
 			BUS_IDLE: begin
 
-				// End pending UART/SPI/Audio writes
+				// End pending UART/SPI/AUDIO/GPU FIFO writes
 				uartsendwe <= 1'b0;
 				spiwwe <= 1'b0;
 				abwe <= 1'b0;
+				gfifowe <= 1'b0;
 
 				if (deviceSelect[DEV_DDR3] & (busre | (|buswe))) begin
 					currentcacheline <= cache[busaddress[12:5]];
@@ -764,6 +1002,12 @@ always @(posedge clock) begin
 							aramdin <= busdata;
 							busmode <= BUS_WRITE;
 						end
+						deviceSelect[DEV_GRAM]: begin
+							gramaddr <= busaddress[15:2];
+							gramwe <= buswe;
+							gramdin <= busdata;
+							busmode <= BUS_WRITE;
+						end
 						deviceSelect[DEV_UARTRW]: begin
 							uartsenddin <= busdata[7:0];
 							busmode <= BUS_WRITE;
@@ -780,6 +1024,10 @@ always @(posedge clock) begin
 							abdin <= busdata;
 							busmode <= BUS_WRITE;
 						end
+						deviceSelect[DEV_GPUFIFO]: begin
+							gfifodin <= busdata;
+							busmode <= BUS_WRITE;
+						end
 					endcase
 				end
 
@@ -791,6 +1039,11 @@ always @(posedge clock) begin
 						deviceSelect[DEV_ARAM]: begin
 							aramaddr <= busaddress[15:2];
 							aramre <= busre;
+							busmode <= BUS_READ;
+						end
+						deviceSelect[DEV_GRAM]: begin
+							gramaddr <= busaddress[15:2];
+							gramre <= busre;
 							busmode <= BUS_READ;
 						end
 						deviceSelect[DEV_UARTRW]: begin
@@ -849,6 +1102,9 @@ always @(posedge clock) begin
 					end
 					deviceSelect[DEV_ARAM]: begin
 						busmode <= BUS_ARAMRETIRE;
+					end
+					deviceSelect[DEV_GRAM]: begin
+						busmode <= BUS_GRAMRETIRE;
 					end
 					deviceSelect[DEV_UARTRW]: begin
 						if(~uartrcvempty) begin
@@ -957,6 +1213,14 @@ always @(posedge clock) begin
 							busmode <= BUS_WRITE; // Stall until audio fifo's empty
 						end
 					end
+					deviceSelect[DEV_GPUFIFO]: begin
+						if (~gpu_fifowrfull) begin
+							gfifowe <= 1'b1;
+							busmode <= BUS_IDLE;
+						end else begin
+							busmode <= BUS_WRITE; // Stall until audio fifo's empty
+						end
+					end
 				endcase
 			end
 
@@ -997,6 +1261,11 @@ always @(posedge clock) begin
 
 			BUS_ARAMRETIRE: begin
 				dataout <= aramdout;
+				busmode <= BUS_IDLE;
+			end
+
+			BUS_GRAMRETIRE: begin
+				dataout <= gramdout;
 				busmode <= BUS_IDLE;
 			end
 

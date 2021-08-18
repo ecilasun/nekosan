@@ -19,13 +19,15 @@ This version implements the following:
   - Using memory mapped I/O mechanism
 - Audio output support
   - Same i2s device as before via self-timing FIFO
-
-## TODO
 - Video output support
   - Same DVI output device as before
   - A minimal GPU implementation
   - Add G-RAM, true dual port, shared between GPU/CPU
   - Video scanout + framebuffer devices
+
+## TODO
+- Bus arbiter to support more than one bus master
+  - An extra RISCV core perhaps? Or place the GPU here?
 - A more advanced boot ROM image
   - Current ROM image supports only illegal instruction exception traps
   - Might want to extend it to support timer driven interrupts and thread support by default (via ECALL from ELF?)

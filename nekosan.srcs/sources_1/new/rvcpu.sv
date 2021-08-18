@@ -98,6 +98,7 @@ decoder InstructionDecoder(
 logic regwena = 1'b0;
 logic [31:0] regdata = 32'd0;
 wire [31:0] rval1, rval2;
+
 registerfile rv32iregisters(
 	.clock(clock),
 	.rs1(rs1),
@@ -107,6 +108,26 @@ registerfile rv32iregisters(
 	.datain(regdata),
 	.rval1(rval1),
 	.rval2(rval2) );
+	
+// -----------------------------------------------------------------------
+// Floating point register file
+// -----------------------------------------------------------------------
+
+logic fregwena = 1'b0;
+logic [31:0] fregdata = 32'd0;
+wire [31:0] frval1, frval2, frval3;
+
+floatregisterfile myfloatregs(
+	.clock(clock),
+	.rs1(rs1),
+	.rs2(rs2),
+	.rs3(rs3),
+	.rd(rd),
+	.wren(fregwena),
+	.datain(fregdata),
+	.rval1(frval1),
+	.rval2(frval2),
+	.rval3(frval3) );
 
 // -----------------------------------------------------------------------
 // Integer/Branch ALUs
@@ -355,10 +376,96 @@ always @(posedge clock, negedge resetn) begin
 							cpustate[CPU_RETIRE] <= 1'b1;
 						end
 					end
-					/*`OPCODE_FLOAT_LDW, */`OPCODE_LOAD: begin
+					`OPCODE_FLOAT_OP: begin
+						/*unique case (func7)
+							`FSGNJ: begin
+								unique case(func3)
+									3'b000: begin // FSGNJ
+										fregdata <= {frval2[31], frval1[30:0]}; 
+									end
+									3'b001: begin  // FSGNJN
+										fregdata <= {~frval2[31], frval1[30:0]};
+									end
+									3'b010: begin  // FSGNJX
+										fregdata <= {frval1[31]^frval2[31], frval1[30:0]};
+									end
+								endcase
+								cpustate[CPU_RETIRE] <= 1'b1;
+							end
+							`FMVXW: begin
+								if (Wfunc3 == 3'b000) //FMVXW
+									rdata <= frval1;
+								else // FCLASS
+									rdata <= 32'd0; // TBD
+								cpustate[CPU_RETIRE] <= 1'b1;
+							end
+							`FMVWX: begin
+								fregdata <= rval1;
+								cpustate[CPU_RETIRE] <= 1'b1;
+							end
+							`FADD: begin
+								faddvalid <= 1'b1;
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FSUB: begin
+								fsubvalid <= 1'b1;
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end	
+							`FMUL: begin
+								fmulvalid <= 1'b1;
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end	
+							`FDIV: begin
+								fdivvalid <= 1'b1;
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FCVTSW: begin	
+								fi2fvalid <= (Wrs2==5'b00000) ? 1'b1:1'b0; // Signed
+								fui2fvalid <= (Wrs2==5'b00001) ? 1'b1:1'b0; // Unsigned
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FCVTWS: begin
+								ff2ivalid <= (Wrs2==5'b00000) ? 1'b1:1'b0; // Signed
+								ff2uivalid <= (Wrs2==5'b00001) ? 1'b1:1'b0; // Unsigned
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FSQRT: begin
+								fsqrtvalid <= 1'b1;
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FEQ: begin
+								feqvalid <= (Wfunc3==3'b010) ? 1'b1:1'b0; // FEQ
+								fltvalid <= (Wfunc3==3'b001) ? 1'b1:1'b0; // FLT
+								flevalid <= (Wfunc3==3'b000) ? 1'b1:1'b0; // FLE
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+							`FMAX: begin
+								fltvalid <= 1'b1; // FLT
+								cpustate[CPU_FSTALL] <= 1'b1;
+							end
+						endcase*/
+						cpustate[CPU_RETIRE] <= 1'b1;
+					end
+					`OPCODE_FLOAT_MADD: begin
+						// TODO
+						cpustate[CPU_RETIRE] <= 1'b1;
+					end
+					`OPCODE_FLOAT_MSUB: begin
+						// TODO
+						cpustate[CPU_RETIRE] <= 1'b1;
+					end
+					`OPCODE_FLOAT_NMSUB: begin
+						// TODO
+						cpustate[CPU_RETIRE] <= 1'b1;
+					end
+					`OPCODE_FLOAT_NMADD: begin
+						// TODO
+						cpustate[CPU_RETIRE] <= 1'b1;
+					end
+					`OPCODE_FLOAT_LDW, `OPCODE_LOAD: begin
 						cpustate[CPU_LOADSTALL] <= 1'b1;
 					end
-					/*`OPCODE_FLOAT_STW, */`OPCODE_STORE: begin
+					`OPCODE_FLOAT_STW, `OPCODE_STORE: begin
 						/*if (~busbusy) begin // Need this for multi-CPU
 						end else begin*/
 						busaddress <= immreach;
@@ -382,8 +489,8 @@ always @(posedge clock, negedge resetn) begin
 								endcase
 							end
 							default: begin // DWORD
-								dataout <= rval2;
-								// dataout <= /*(opcode == `OPCODE_FLOAT_STW) ? frval2 :*/ rval2;
+								//dataout <= rval2;
+								dataout <= (opcode == `OPCODE_FLOAT_STW) ? frval2 : rval2;
 								buswe <= 4'hF;
 							end
 						endcase
