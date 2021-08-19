@@ -3,7 +3,7 @@
 `include "cpuops.vh"
 
 module IALU(
-	output logic [31:0] aluout,
+	output logic [31:0] aluout = 32'd0,
 	input wire [2:0] func3,
 	input wire [31:0] val1,
 	input wire [31:0] val2,

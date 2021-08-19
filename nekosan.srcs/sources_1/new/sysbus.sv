@@ -95,9 +95,9 @@ wire [10:0] deviceSelect = {
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0010 ? 1'b1 : 1'b0,	// 05: 0x8xxxxx08 UART read/write port				+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0001 ? 1'b1 : 1'b0,	// 04: 0x8xxxxx04 UART incoming queue byte ready	+
 	{busaddress[31:28], busaddress[5:2]} == 8'b1000_0000 ? 1'b1 : 1'b0,	// 03: 0x8xxxxx00 GPU command queue					+
-	(busaddress[31:28]==4'b0010) ? 1'b1 : 1'b0,							// 02: 0x20000000 - 0x2FFFFFFF - ARAM				+
-	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - GRAM				+
-	(busaddress[31:28]==4'b0000) ? 1'b1 : 1'b0							// 00: 0x00000000 - 0x0FFFFFFF (DDR3 - 256Mbytes)	+
+	(busaddress[31:28]==4'b0010) ? 1'b1 : 1'b0,							// 02: 0x20000000 - 0x2FFFFFFF - A-RAM (64Kbytes)	+
+	(busaddress[31:28]==4'b0001) ? 1'b1 : 1'b0,							// 01: 0x10000000 - 0x1FFFFFFF - G-RAM (64Kbytes)	+
+	(busaddress[31:28]==4'b0000) ? 1'b1 : 1'b0							// 00: 0x00000000 - 0x0FFFFFFF - DDR3 (256Mbytes)	+
 };
 
 // ----------------------------------------------------------------------------
@@ -365,7 +365,7 @@ switchfifo DeviceSwitchStates(
 logic [8:0] prevswitchstate = 9'h00;
 logic [8:0] interswitchstate = 9'h00;
 logic [8:0] newswitchstate = 9'h00;
-wire [8:0] currentswitchstate = {buttons, switches};
+wire [8:0] currentswitchstate = {switches, buttons};
 
 always @(posedge clk25) begin
 	if (~resetn) begin
@@ -730,17 +730,18 @@ ddr3readdonequeue DDR3ReadDone(
 
 logic [13:0] aramaddr = 14'd0;
 logic [31:0] aramdin = 32'd0;
+wire [31:0] aramdout;
 logic [3:0] aramwe = 4'h0;
 logic aramre = 1'b0;
-wire [31:0] aramdout;
+
 scratchpadmemory AudioAndBootMemory(
-	.addra(aramaddr),
+	.addra(aramaddr),	// 0x20000000-0x200010000 (DWORD aligned, lower 2 bits dropped) - 64K usable
 	.clka(clock),
 	.dina(aramdin),
 	.douta(aramdout),
-	.ena((resetn) & (aramre | (|aramwe))),
+	.ena(deviceSelect[DEV_ARAM] & (aramre | (|aramwe))), // Enable only when Device ID == A-RAM ID
 	.wea(aramwe) );
-	
+
 // ----------------------------------------------------------------------------
 // G-RAM
 // ----------------------------------------------------------------------------
@@ -753,11 +754,11 @@ logic gramre = 1'b0;
 
 GRAM GraphicsMemory(
 	// Port A - CPU access via CPU bus
-	.addra(gramaddr),	// 0x10000000-0x1FFFFFFFF (DWORD aligned, lower 2 bits dropped) - 64K usable
+	.addra(gramaddr),	// 0x10000000-0x100010000 (DWORD aligned, lower 2 bits dropped) - 64K usable
 	.clka(clock),
 	.dina(gramdin),
 	.douta(gramdout),
-	.ena(deviceSelect[DEV_GRAM] & (gramre | (|gramwe))), // Enable only when Device ID == GRAM ID
+	.ena(deviceSelect[DEV_GRAM] & (gramre | (|gramwe))), // Enable only when Device ID == G-RAM ID
 	.wea(gramwe),
 	// Port B - GPU DMA access
 	.addrb(gramdmawriteaddress[15:2]), // 13:0

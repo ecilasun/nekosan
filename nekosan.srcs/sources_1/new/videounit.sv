@@ -17,6 +17,9 @@ module VideoControllerGen(
 logic [31:0] scanlinecache [0:127];
 wire [11:0] pixelY = (video_y-12'd32);
 
+// Each line in the video buffer contains 48 additional dwords (192 bytes) of extra storage at the end
+// This area can only be written to by the GPU
+// TODO: Find a nice use for this unused memory region
 //           80 DWORDS              +48 DWORDS
 // |------------------------------|............|
 
