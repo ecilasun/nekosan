@@ -24,6 +24,7 @@ This version implements the following:
   - A minimal GPU implementation (DMA+mem writes)
   - Add DMA access to G-RAM from GPU side (true dual port)
   - DVI unit + 2xframebuffer devices + scanout buffer
+- Floating point math support (32bit single precision)
 
 ## TODO
 - Programs should be able to return back to the ROM code (loader)

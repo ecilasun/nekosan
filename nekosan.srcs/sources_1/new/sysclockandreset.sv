@@ -3,7 +3,7 @@
 module sysclockandreset(
 	input wire sys_clock,
 	output wire clk25,
-	output wire clk100,
+	output wire gpuclock,
 	output wire clk120,
 	output wire clk50,
 	output wire cpuclock,
@@ -17,7 +17,7 @@ wire clkAlocked, clkBlocked, ddr3clklocked;
 coreclock CentralClockGen(
 	.clk_in1(sys_clock),
 	.clk25(clk25),
-	.clk100(clk100),
+	.gpuclock(gpuclock),
 	.clk120(clk120),
 	.clk50(clk50),
 	.cpuclock(cpuclock),

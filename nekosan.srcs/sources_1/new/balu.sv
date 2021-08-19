@@ -4,7 +4,7 @@
 
 module BALU(
 	input wire clock,
-	output logic branchout,
+	output logic branchout = 1'b0,
 	input wire [31:0] val1,
 	input wire [31:0] val2,
 	input wire [3:0] bluop);

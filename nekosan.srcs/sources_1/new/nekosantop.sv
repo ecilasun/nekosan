@@ -61,13 +61,13 @@ module nekosantop(
 // ----------------------------------------------------------------------------
 
 wire devicereset;
-wire clk25, clk100, clk120, clk50;
+wire clk25, gpuclock, clk120, clk50;
 wire sys_clk_in, clk200, cpuclock, audiocore;
 
 sysclockandreset SystemClockAndResetGen(
 	.sys_clock(sys_clock),
 	.clk25(clk25),
-	.clk100(clk100),
+	.gpuclock(gpuclock),
 	.clk120(clk120),
 	.clk50(clk50),
 	.cpuclock(cpuclock),
@@ -95,7 +95,7 @@ sysbus SystemBus(
 	.audiocore(audiocore),
 	.clk25(clk25),
 	.clk50(clk50),
-	.gpuclock(clk100),
+	.gpuclock(gpuclock),
 	.resetn(deviceresetn),
 	// Bus / cache control
 	.busbusy(busbusy),

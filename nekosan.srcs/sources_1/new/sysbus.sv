@@ -946,6 +946,10 @@ wire busactive = busmode != BUS_IDLE;
 // Any read/write activity and non-mode-0 is considered 'busy'
 assign busbusy = busactive | busre | (|buswe);
 
+// -----------------------------------------------------------------------
+// Core
+// -----------------------------------------------------------------------
+
 always @(posedge clock) begin
 	if (~resetn) begin
 
