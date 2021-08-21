@@ -25,6 +25,7 @@ This version implements the following:
   - Add DMA access to G-RAM from GPU side (true dual port)
   - DVI unit + 2xframebuffer devices + scanout buffer
 - Floating point math support (32bit single precision)
+- A graphical user interface like before: show SDCard contents & load selection
 
 ## TODO
 - Programs should be able to return back to the ROM code (loader)
@@ -32,6 +33,5 @@ This version implements the following:
 - Add bus arbiter to support more than one bus master
   - An extra RISCV core perhaps?
 - A more advanced boot ROM image
-  - Current ROM image supports only illegal instruction exception traps and UART program loading
-  - Might want to extend it to support timer driven interrupts and thread support by default (via ECALL from ELF?)
-  - A graphical user interface like before: show SDCard contents & load selection
+  - Current ROM image supports only illegal instruction exception traps and UART/SDCard program loading
+  - Might want to extend it to support h/w interrupts for debug support, and simple multitasking support by default (via ECALL from ELF?)
