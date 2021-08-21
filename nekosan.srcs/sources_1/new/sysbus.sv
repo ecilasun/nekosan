@@ -42,9 +42,8 @@ module sysbus(
 	output spi_mosi,
 	input spi_miso,
 	output spi_sck,
-	input spi_cd,
 	// Switches/buttons
-	input [4:0] switches,
+	input [3:0] switches,
 	input [3:0] buttons,
 	output logic [15:0] leds = 32'd0,
 	// I2S2 audio
@@ -341,11 +340,11 @@ i2s2audio soundoutput(
 // ----------------------------------------------------------------------------
 
 wire switchfull, switchempty;
-logic [8:0] switchdatain;
-wire [8:0] switchdataout;
+logic [7:0] switchdatain = 7'd0;
+wire [7:0] switchdataout;
 wire switchvalid;
-logic switchwe=1'b0;
-logic switchre=1'b0;
+logic switchwe = 1'b0;
+logic switchre = 1'b0;
 
 switchfifo DeviceSwitchStates(
 	// In
@@ -362,10 +361,10 @@ switchfifo DeviceSwitchStates(
 	// Ctl
 	.rst(~resetn) );
 
-logic [8:0] prevswitchstate = 9'h00;
-logic [8:0] interswitchstate = 9'h00;
-logic [8:0] newswitchstate = 9'h00;
-wire [8:0] currentswitchstate = {switches, buttons};
+logic [7:0] prevswitchstate = 8'h00;
+logic [7:0] interswitchstate = 8'h00;
+logic [7:0] newswitchstate = 8'h00;
+wire [7:0] currentswitchstate = {switches, buttons};
 
 always @(posedge clk25) begin
 	if (~resetn) begin
@@ -863,7 +862,7 @@ uartrcvfifo UARTDataInFIFO(
 
 always @(posedge clk25) begin
 	uartrcvwe <= 1'b0;
-	if (uartbyteavailable) begin // And if the FIFO is full, disaster... Perhaps use interrupts to guarantee reads?
+	if (uartbyteavailable) begin
 		uartrcvwe <= 1'b1;
 		uartrcvdin <= uartbytein;
 	end
@@ -879,7 +878,7 @@ always @(posedge clock) begin
 	// but doesn't need to over-drain as it will re-trigger next chance
 	// as long as the fifo has entries
 	IRQ_BITS[0] <= ~uartrcvempty;	// UARTRX
-	IRQ_BITS[1] <= ~spirempty;		// SPIRX
+	IRQ_BITS[1] <= 0;				// SPI: ~spirempty TODO: re-enable when FIFO Enable lines are tied, or we'll get spam of IRQs
 	IRQ_BITS[2] <= ~switchempty;	// SWITCHES/SLIDERS
 end
 
@@ -1257,7 +1256,7 @@ always @(posedge clock) begin
 			BUS_SWITCHRETIRE: begin
 				switchre <= 1'b0;
 				if (switchvalid) begin
-					dataout <= {23'd0, switchdataout};
+					dataout <= {24'd0, switchdataout};
 					busmode <= BUS_IDLE;
 				end else begin
 					busmode <= BUS_SWITCHRETIRE;

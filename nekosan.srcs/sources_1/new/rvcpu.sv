@@ -168,17 +168,17 @@ wire divstart = isexecuting & (aluop==`ALU_DIV | aluop==`ALU_REM) & (opcode == `
 
 multiplier themul(
     .clk(clock),
-    .reset(reset),
+    .reset(~resetn),
     .start(mulstart),
     .busy(mulbusy),           // calculation in progress
-    .func3(Wfunc3),
+    .func3(func3),
     .multiplicand(rval1),
     .multiplier(rval2),
     .product(product) );
 
 DIVU unsigneddivider (
 	.clk(clock),
-	.reset(reset),
+	.reset(~resetn),
 	.start(divstart),		// start signal
 	.busy(divbusyu),		// calculation in progress
 	.dividend(rval1),		// dividend
@@ -189,7 +189,7 @@ DIVU unsigneddivider (
 
 DIV signeddivider (
 	.clk(clock),
-	.reset(reset),
+	.reset(~resetn),
 	.start(divstart),		// start signal
 	.busy(divbusy),			// calculation in progress
 	.dividend(rval1),		// dividend
@@ -229,6 +229,7 @@ wire fmaddresultvalid;
 wire fmsubresultvalid;
 wire fnmsubresultvalid; 
 wire fnmaddresultvalid;
+
 wire faddresultvalid;
 wire fsubresultvalid;
 wire fmulresultvalid;
@@ -482,6 +483,7 @@ end
 logic [63:0] internalwallclockcounter = 64'd0;
 logic [63:0] internalwallclockcounter1 = 64'd0;
 logic [63:0] internalwallclockcounter2 = 64'd0;
+logic [63:0] internaltimecmp = 64'd0;
 always @(posedge wallclock) begin
 	internalwallclockcounter <= internalwallclockcounter + 64'd1;
 end
@@ -497,7 +499,7 @@ always @(posedge clock) begin
 	internalretirecounter <= internalretirecounter + {63'd0, cpustate[CPU_RETIRE]};
 end
 
-wire timerinterrupt = CSRReg[`CSR_MIE][7] & (internalwallclockcounter2 >= {CSRReg[`CSR_TIMECMPHI], CSRReg[`CSR_TIMECMPLO]});
+wire timerinterrupt = CSRReg[`CSR_MIE][7] & (internalwallclockcounter2 >= internaltimecmp);
 wire externalinterrupt = (CSRReg[`CSR_MIE][11] & IRQ);
 
 // -----------------------------------------------------------------------
@@ -534,7 +536,7 @@ always @(posedge clock, negedge resetn) begin
 			end
 
 			cpustate[CPU_DECODE]: begin
-				// Update counters
+				// Update CSRs with internal counters
 				{CSRReg[`CSR_CYCLEHI], CSRReg[`CSR_CYCLELO]} <= internalcyclecounter;
 				{CSRReg[`CSR_TIMEHI], CSRReg[`CSR_TIMELO]} <= internalwallclockcounter2;
 				{CSRReg[`CSR_RETIHI], CSRReg[`CSR_RETILO]} <= internalretirecounter;
@@ -598,7 +600,7 @@ always @(posedge clock, negedge resetn) begin
 							end
 							`FMVXW: begin
 								regwena <= 1'b1;
-								if (Wfunc3 == 3'b000) //FMVXW
+								if (func3 == 3'b000) //FMVXW
 									regdata <= frval1;
 								else // FCLASS
 									regdata <= 32'd0; // TBD
@@ -834,9 +836,9 @@ always @(posedge clock, negedge resetn) begin
 							regwena <= 1'b1;
 							if (func3==3'b010) // FEQ
 								regdata <= {31'd0,feqresult[0]};
-							else if (Wfunc3==3'b001) // FLT
+							else if (func3==3'b001) // FLT
 								regdata <= {31'd0,fltresult[0]};
-							else //if (Wfunc3==3'b000) // FLE
+							else //if (func3==3'b000) // FLE
 								regdata <= {31'd0,fleresult[0]};
 						end
 						`FMIN: begin
@@ -880,6 +882,9 @@ always @(posedge clock, negedge resetn) begin
 			end
 
 			cpustate[CPU_RETIRE]: begin
+				// Update internal counters from CSRs
+				internaltimecmp <= {CSRReg[`CSR_TIMECMPHI], CSRReg[`CSR_TIMECMPLO]};
+
 				// Stop writes to integer/float register files
 				regwena <= 1'b0;
 				fregwena <= 1'b0;

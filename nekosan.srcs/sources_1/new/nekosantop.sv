@@ -32,7 +32,7 @@ module nekosantop(
 	output spi_mosi,
 	input spi_miso,
 	output spi_sck,
-	input spi_cd,
+	//input spi_cd,
 	// Switches/buttons - ONBOARD
 	input [3:0] switches,
 	input [3:0] buttons,
@@ -76,7 +76,7 @@ sysclockandreset SystemClockAndResetGen(
 	.ddr3_ref(clk200),
 	.devicereset(devicereset));
 
-wire deviceresetn = ~devicereset;
+wire resetn = ~devicereset;
 
 // ----------------------------------------------------------------------------
 // System bus
@@ -96,7 +96,7 @@ sysbus SystemBus(
 	.clk25(clk25),
 	.clk50(clk50),
 	.gpuclock(gpuclock),
-	.resetn(deviceresetn),
+	.resetn(resetn),
 	// Bus / cache control
 	.busbusy(busbusy),
 	.busaddress(busaddress),
@@ -132,9 +132,8 @@ sysbus SystemBus(
 	.spi_mosi(spi_mosi),
 	.spi_miso(spi_miso),
 	.spi_sck(spi_sck),
-	.spi_cd(spi_cd),
 	// Switches/buttons
-	.switches({spi_cd, switches}),
+	.switches(switches),
 	.buttons(buttons),
 	// LEDs
 	.leds({led0_b, led0_g, led0_r, led1_b, led1_g, led1_r, led2_b, led2_g, led2_r, led3_b, led3_g, led3_r, leds}),
@@ -153,13 +152,17 @@ sysbus SystemBus(
 	.DVI_CLK(DVI_CLK) );
 
 // ----------------------------------------------------------------------------
-// CPU
+// TODO: Bus arbiter
+// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// CPU #0
 // ----------------------------------------------------------------------------
 
 rvcpu CPU0(
 	.clock(cpuclock),
 	.wallclock(clk25),
-	.resetn(deviceresetn),
+	.resetn(resetn),
 	// Bus / cache control
 	.busbusy(busbusy),
 	.busaddress(busaddress),
