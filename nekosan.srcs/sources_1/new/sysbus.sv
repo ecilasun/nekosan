@@ -142,6 +142,7 @@ wire [7:0] PALETTEINDEX_TWO;
 
 wire dataEnableA, dataEnableB;
 wire inDisplayWindowA, inDisplayWindowB;
+wire [12:0] gpulanewritemask;
 
 VideoControllerGen VideoUnitA(
 	.gpuclock(gpuclock),
@@ -257,7 +258,7 @@ gpu GraphicsProcessor(
 	.vramaddress(gpuwriteaddress),
 	.vramwe(gpuwriteenable),
 	.vramwriteword(gpuwriteword),
-	//output logic [12:0] lanemask = 70'd0, // We need to pick tiles for simultaneous writes
+	.lanemask(gpulanewritemask),
 	// GRAM DMA channel
 	.dmaaddress(gramdmawriteaddress),
 	.dmawriteword(gramdmawriteword),
@@ -272,24 +273,25 @@ gpu GraphicsProcessor(
 // Domain crossing vsync
 // ----------------------------------------------------------------------------
 
-/*wire [31:0] vsync_fastdomain;
+wire [31:0] vsync_fastdomain;
 wire vsyncfifoempty;
 wire vsyncfifovalid;
 
 logic vsync_re;
 DomainCrossSignalFifo GPUVGAVSyncQueue(
-	.full(),
+	.full(), // Not really going to get full (read clock faster than write clock)
 	.din(vsynccounter),
 	.wr_en(vsync_we),
 	.empty(vsyncfifoempty),
 	.dout(vsync_fastdomain),
 	.rd_en(vsync_re),
-	.wr_clk(vgaclock),
+	.wr_clk(clk25),
 	.rd_clk(gpuclock),
-	.rst(reset_p),
+	.rst(~resetn),
 	.valid(vsyncfifovalid) );
 
-// Drain the vsync fifo and set vsync signal for the GPU every time we find one
+// Drain the vsync fifo and set a new vsync signal for the GPU every time we find one
+// This is done in GPU clocks so we don't need to further sync the read data to GPU
 always @(posedge gpuclock) begin
 	vsync_re <= 1'b0;
 	if (~vsyncfifoempty) begin
@@ -298,7 +300,7 @@ always @(posedge gpuclock) begin
 	if (vsyncfifovalid) begin
 		vsync_signal <= vsync_fastdomain;
 	end
-end*/
+end
 
 // ----------------------------------------------------------------------------
 // Audio output FIFO

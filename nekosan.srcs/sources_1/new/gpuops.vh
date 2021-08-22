@@ -20,10 +20,10 @@
 
 // =================== GPU Commands =============================
 
-`define GPUCMD_UNUSED0		3'b000
+`define GPUCMD_VSYNC		3'b000
 `define GPUCMD_SETREG		3'b001
 `define GPUCMD_SETPALENT	3'b010
-`define GPUCMD_UNUSED3		3'b011
+`define GPUCMD_CLEAR		3'b011
 `define GPUCMD_SYSDMA		3'b100
 `define GPUCMD_VMEMOUT		3'b101
 `define GPUCMD_GMEMOUT		3'b110

@@ -56,7 +56,7 @@ module gpu (
 	output logic [14:0] vramaddress,
 	output logic [31:0] vramwriteword,
 	output logic [3:0] vramwe = 4'b0000,
-	//output logic [12:0] lanemask = 70'd0, // We need to pick tiles for simultaneous writes
+	output logic [12:0] lanemask = 13'd0,
 	// GRAM DMA channel
 	output logic [31:0] dmaaddress,
 	output logic [31:0] dmawriteword,
@@ -93,7 +93,7 @@ gpuregisterfile gpuregs(
 // Main state machine
 // ==============================================================
 
-//logic [31:0] vsyncrequestpoint = 32'd0;
+logic [31:0] vsyncrequestpoint = 32'd0;
 
 always_ff @(posedge clock) begin
 	if (reset) begin
@@ -101,18 +101,18 @@ always_ff @(posedge clock) begin
 		gpustate <= `GPUSTATEIDLE_MASK;
 
 	end else begin
-	
+
 		gpustate <= `GPUSTATENONE_MASK;
-	
+
 		unique case (1'b1)
-		
+
 			gpustate[`GPUSTATEIDLE]: begin
 				// Stop writes to memory, registers and palette
 				vramwe <= 4'b0000;
 				rwren <= 1'b0;
 				dmawe <= 4'b0000;
 				palettewe <= 1'b0;
-				//lanemask <= 13'd0;
+				lanemask <= 13'd0;
 
 				// See if there's something on the fifo
 				if (~fifoempty) begin
@@ -134,20 +134,28 @@ always_ff @(posedge clock) begin
 					rs <= fifodout[11:8];		// source register
 					imm20 <= fifodout[31:12];	// 20 bit immediate
 					imm24 <= fifodout[31:8];	// 24 bit immediate
-					//vsyncrequestpoint <= vsync;
+					// Remember the last known vsync counter
+					// in case we need to wait for vsync at this point
+					vsyncrequestpoint <= vsync;
 					gpustate[`GPUSTATEEXEC] <= 1'b1;
 				end else begin
 					// Data is not available yet, spin
 					gpustate[`GPUSTATELATCHCOMMAND] <= 1'b1;
 				end
 			end
-			
+
 			// Command execute statepaletteaddress
 			gpustate[`GPUSTATEEXEC]: begin
 				unique case (cmd)
-					`GPUCMD_UNUSED0: begin
-						// IIII IIII IIII IIII IIII SSSS DDDD MCCC
-						gpustate[`GPUSTATEIDLE] <= 1'b1;
+					`GPUCMD_VSYNC: begin
+						if (vsync > vsyncrequestpoint) begin
+							// New vsync counter is greater than our request,
+							// we can continue execution
+							gpustate[`GPUSTATEIDLE] <= 1'b1;
+						end else begin
+							// Wait in EXEC until we get past the request point
+							gpustate[`GPUSTATEEXEC] <= 1'b1;
+						end
 					end
 					`GPUCMD_SETREG: begin
 						rwren <= 1'b1;
@@ -168,8 +176,12 @@ always_ff @(posedge clock) begin
 						palettewe <= 1'b1;
 						gpustate[`GPUSTATEIDLE] <= 1'b1;
 					end
-					`GPUCMD_UNUSED3: begin
-						// IIII IIII IIII IIII IIII SSSS DDDD MCCC
+					`GPUCMD_CLEAR: begin
+						vramaddress <= 15'd0;
+						vramwriteword <= rval;
+						// Enable all 4 bytes since clears are 32bit per write
+						vramwe <= 4'b1111;
+						lanemask <= 13'h1FFF; // Turn on all lanes for parallel writes
 						gpustate[`GPUSTATECLEAR] <= 1'b1;
 					end
 					`GPUCMD_SYSDMA: begin
@@ -198,6 +210,16 @@ always_ff @(posedge clock) begin
 						gpustate[`GPUSTATEIDLE] <= 1'b1;
 					end
 				endcase
+			end
+
+			gpustate[`GPUSTATECLEAR]: begin // CLEAR
+				if (vramaddress == 15'h800) begin // (512*16/4) (DWORD addresses) -> 0x800 (2048, size of one slice of DWORDs, of which there are 13)
+					gpustate[`GPUSTATEIDLE] <= 1'b1;
+				end else begin
+					vramaddress <= vramaddress + 15'd1;
+					// Loop in same state
+					gpustate[`GPUSTATECLEAR] <= 1'b1;
+				end
 			end
 
 			gpustate[`GPUSTATEDMAKICK]: begin
