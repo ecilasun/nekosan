@@ -28,10 +28,17 @@ This version implements the following:
 - A graphical user interface like before: show SDCard contents & load selection
 
 ## TODO
-- Programs should be able to return back to the ROM code (loader)
 - Add vsync back to the GPU
+- Programs should be able to return back to the ROM code (loader)
 - Add bus arbiter to support more than one bus master
   - An extra RISCV core perhaps?
+  - Would individual mainboxes per CPU core work?
 - A more advanced boot ROM image
   - Current ROM image supports only illegal instruction exception traps and UART/SDCard program loading
-  - Might want to extend it to support h/w interrupts for debug support, and simple multitasking support by default (via ECALL from ELF?)
+  - Might want to extend it to support h/w interrupts(via UART) for debugging, and simple multitasking support by default (via ECALL from ELF?)
+  - A better SDCard navigator (icons, perhaps?)
+
+## Disclaimer
+
+**WARNING**: The device defined by this source code is built for experimental / educational uses only and is not
+intended for field use, especially where it may cause harm to any living being.
