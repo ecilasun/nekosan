@@ -32,8 +32,8 @@ wire [1:0]   ddr3_dqs_n;
 wire [1:0]   tdqs_n;
 wire [15:0]  ddr3_dq;
 
-/*wire [3:0] DVI_R, DVI_G, DVI_B;
-wire DVI_HS, DVI_VS, DVI_DE, DVI_CLK;*/
+wire [3:0] DVI_R, DVI_G, DVI_B;
+wire DVI_HS, DVI_VS, DVI_DE, DVI_CLK;
 
 wire spi_cs_n, spi_mosi, spi_sck;
 logic spi_miso = 1'b1;
@@ -64,13 +64,13 @@ nekosantop simtop(
 	,.uart_rxd_out(uart_rxd_out)
 	,.uart_txd_in(uart_txd_in)
 	// DVI on PMOD ports A+B
-	/*,.DVI_R(DVI_R)
+	,.DVI_R(DVI_R)
 	,.DVI_G(DVI_G)
 	,.DVI_B(DVI_B)
 	,.DVI_HS(DVI_HS)
 	,.DVI_VS(DVI_VS)
 	,.DVI_DE(DVI_DE)
-	,.DVI_CLK(DVI_CLK)*/
+	,.DVI_CLK(DVI_CLK)
     // DDR3 SDRAM
     ,.ddr3_reset_n(ddr3_reset_n)
     ,.ddr3_cke(ddr3_cke)
@@ -93,7 +93,7 @@ nekosantop simtop(
 	,.spi_mosi(spi_mosi)
 	,.spi_miso(spi_miso)
 	,.spi_sck(spi_sck)
-	,.spi_cd(spi_cd)
+	//,.spi_cd(spi_cd)
 	// LEDs
 	,.led0_b() ,.led0_g() ,.led0_r()
 	,.led1_b() ,.led1_g() ,.led1_r()

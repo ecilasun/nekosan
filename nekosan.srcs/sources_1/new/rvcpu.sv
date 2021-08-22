@@ -6,6 +6,7 @@ module rvcpu(
 	input wire clock,
 	input wire wallclock,
 	input wire resetn,
+	input wire businitialized,
 	input wire busbusy,
 	output logic [31:0] busaddress = 32'd0,
 	inout wire [31:0] busdata,
@@ -51,7 +52,7 @@ initial begin
 	ebreak = 1'b0;
 	illegalinstruction = 1'b0;
 	cpustate = 11'd0;
-	cpustate[CPU_RETIRE] = 1'b1; // RETIRE state by default
+	cpustate[CPU_IDLE] = 1'b1; // IDLE state by default to wait for the bus initialization
 	instruction = {25'd0, `ADDI}; // NOOP by default (addi x0,x0,0)
 end
 
@@ -166,14 +167,19 @@ wire isexecuting = (cpustate[CPU_EXEC]==1'b1) ? 1'b1 : 1'b0;
 wire mulstart = isexecuting & (aluop==`ALU_MUL) & (opcode == `OPCODE_OP);
 wire divstart = isexecuting & (aluop==`ALU_DIV | aluop==`ALU_REM) & (opcode == `OPCODE_OP);
 
+logic [31:0] dividend = 32'd0;
+logic [31:0] divisor = 32'd1;
+logic [31:0] multiplicand = 32'd0;
+logic [31:0] multiplier = 32'd0;
+
 multiplier themul(
     .clk(clock),
     .reset(~resetn),
     .start(mulstart),
     .busy(mulbusy),           // calculation in progress
     .func3(func3),
-    .multiplicand(rval1),
-    .multiplier(rval2),
+    .multiplicand(multiplicand),
+    .multiplier(multiplier),
     .product(product) );
 
 DIVU unsigneddivider (
@@ -181,8 +187,8 @@ DIVU unsigneddivider (
 	.reset(~resetn),
 	.start(divstart),		// start signal
 	.busy(divbusyu),		// calculation in progress
-	.dividend(rval1),		// dividend
-	.divisor(rval2),		// divisor
+	.dividend(dividend),	// dividend
+	.divisor(divisor),		// divisor
 	.quotient(quotientu),	// result: quotient
 	.remainder(remainderu)	// result: remainer
 );
@@ -192,8 +198,8 @@ DIV signeddivider (
 	.reset(~resetn),
 	.start(divstart),		// start signal
 	.busy(divbusy),			// calculation in progress
-	.dividend(rval1),		// dividend
-	.divisor(rval2),		// divisor
+	.dividend(dividend),		// dividend
+	.divisor(divisor),		// divisor
 	.quotient(quotient),	// result: quotient
 	.remainder(remainder)	// result: remainder
 );
@@ -524,6 +530,17 @@ always @(posedge clock, negedge resetn) begin
 		buswe <= 1'b0;
 
 		case (1'b1)
+		
+			cpustate[CPU_IDLE]: begin
+				if (businitialized) begin
+					// Bus is initialized, we can now
+					// resume r/w from/to DDR3 and other devices
+					cpustate[CPU_RETIRE] <= 1'b1;
+				end else begin
+					// Keep waiting for bus reset
+					cpustate[CPU_IDLE] <= 1'b1;
+				end
+			end
 
 			cpustate[CPU_FETCH]: begin
 				if (busbusy) begin
@@ -540,6 +557,12 @@ always @(posedge clock, negedge resetn) begin
 				{CSRReg[`CSR_CYCLEHI], CSRReg[`CSR_CYCLELO]} <= internalcyclecounter;
 				{CSRReg[`CSR_TIMEHI], CSRReg[`CSR_TIMELO]} <= internalwallclockcounter2;
 				{CSRReg[`CSR_RETIHI], CSRReg[`CSR_RETILO]} <= internalretirecounter;
+
+				// Set up math unit inputs
+				dividend <= rval1;
+				divisor <= rval2;
+				multiplicand <= rval1;
+				multiplier <= rval2;
 
 				cpustate[CPU_EXEC] <= 1'b1;
 			end

@@ -90,6 +90,8 @@ wire busre;
 wire cachemode;
 wire [2:0] IRQ_BITS;
 
+wire businitialized;
+
 sysbus SystemBus(
 	.clock(cpuclock),
 	.audiocore(audiocore),
@@ -97,6 +99,7 @@ sysbus SystemBus(
 	.clk50(clk50),
 	.gpuclock(gpuclock),
 	.resetn(resetn),
+	.businitialized(businitialized),
 	// Bus / cache control
 	.busbusy(busbusy),
 	.busaddress(busaddress),
@@ -163,6 +166,7 @@ rvcpu CPU0(
 	.clock(cpuclock),
 	.wallclock(clk25),
 	.resetn(resetn),
+	.businitialized(businitialized),
 	// Bus / cache control
 	.busbusy(busbusy),
 	.busaddress(busaddress),

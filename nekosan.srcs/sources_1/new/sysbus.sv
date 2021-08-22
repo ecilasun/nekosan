@@ -7,6 +7,7 @@ module sysbus(
 	input wire clk50,
 	input wire gpuclock,
 	input wire resetn,
+	output logic businitialized = 1'b0,
 	// Control
 	output wire busbusy,
 	input [31:0] busaddress,
@@ -244,7 +245,7 @@ wire [31:0] gramdmadataout;
 
 gpu GraphicsProcessor(
 	.clock(gpuclock),
-	.reset(devicereset),
+	.reset(~resetn),
 	.vsync(vsync_signal),
 	.videopage(videopage),
 	// GPU command FIFO control wires
@@ -501,7 +502,7 @@ SPI_MASTER SDCardController(
 wire calib_done;
 wire [11:0] device_temp;
 
-logic calib_done1=1'b0, calib_done2=1'b0;
+logic calib_done1=1'b0;
 
 logic [27:0] app_addr = 28'd0;
 logic [2:0]  app_cmd = 3'd0;
@@ -584,38 +585,33 @@ MIG7GEN ddr3memoryinterface (
    .clk_ref_i			(ddr3_ref),
    .sys_rst				(resetn) );
 
-localparam INIT = 3'd0;
-localparam IDLE = 3'd1;
-localparam DECODECMD = 3'd2;
-localparam WRITE = 3'd3;
-localparam WRITE_DONE = 3'd4;
-localparam READ = 3'd5;
-localparam READ_DONE = 3'd6;
+localparam IDLE = 3'd0;
+localparam DECODECMD = 3'd1;
+localparam WRITE = 3'd2;
+localparam WRITE_DONE = 3'd3;
+localparam READ = 3'd4;
+localparam READ_DONE = 3'd5;
 
-logic [2:0] ddr3uistate = INIT;
+logic [2:0] ddr3uistate = IDLE;
 
 localparam CMD_WRITE = 3'b000;
 localparam CMD_READ = 3'b001;
 
-always @ (posedge ui_clk) begin
+// Align calibration signal to bus clock
+always @ (posedge clock) begin
 	calib_done1 <= calib_done;
-	calib_done2 <= calib_done1;
+	businitialized <= calib_done1;
 end
 
 // ddr3 driver
 always @ (posedge ui_clk) begin
 	if (ui_clk_sync_rst) begin
-		ddr3uistate <= INIT;
+		ddr3uistate <= IDLE;
 		app_en <= 0;
 		app_wdf_wren <= 0;
 	end else begin
 
 		case (ddr3uistate)
-			INIT: begin
-				if (calib_done2) begin
-					ddr3uistate <= IDLE;
-				end
-			end
 
 			IDLE: begin
 				ddr3readwe <= 1'b0;
@@ -684,7 +680,7 @@ always @ (posedge ui_clk) begin
 			end
 			
 			default: begin
-				ddr3uistate <= INIT;
+				ddr3uistate <= IDLE;
 			end
 		endcase
 	end
@@ -915,32 +911,24 @@ logic [255:0] currentcacheline;
 // Bus Logic
 // ----------------------------------------------------------------------------
 
-localparam BUS_INIT					= 0;
-localparam BUS_IDLE					= 1;
-localparam BUS_READ					= 2;
-localparam BUS_WRITE				= 3;
-localparam BUS_ARAMRETIRE			= 4;
-localparam BUS_DDR3CACHESTOREHI		= 5;
-localparam BUS_DDR3CACHELOADHI		= 6;
-localparam BUS_DDR3CACHELOADLO		= 7;
-localparam BUS_DDR3CACHEWAIT		= 8;
-localparam BUS_DDR3UPDATECACHELINE	= 9;
-localparam BUS_UPDATEFINALIZE		= 10;
-localparam BUS_UARTRETIRE			= 11;
-localparam BUS_SPIRETIRE			= 12;
-localparam BUS_SWITCHRETIRE			= 13;
-localparam BUS_GRAMRETIRE			= 14;
+localparam BUS_IDLE					= 0;
+localparam BUS_READ					= 1;
+localparam BUS_WRITE				= 2;
+localparam BUS_ARAMRETIRE			= 3;
+localparam BUS_DDR3CACHESTOREHI		= 4;
+localparam BUS_DDR3CACHELOADHI		= 5;
+localparam BUS_DDR3CACHELOADLO		= 6;
+localparam BUS_DDR3CACHEWAIT		= 7;
+localparam BUS_DDR3UPDATECACHELINE	= 8;
+localparam BUS_UPDATEFINALIZE		= 9;
+localparam BUS_UARTRETIRE			= 10;
+localparam BUS_SPIRETIRE			= 11;
+localparam BUS_SWITCHRETIRE			= 12;
+localparam BUS_GRAMRETIRE			= 13;
 
-logic [3:0] busmode = BUS_INIT;
+logic [3:0] busmode = BUS_IDLE;
 logic [31:0] ddr3wdat = 32'd0;
 logic ddr3rw = 1'b0;
-
-// Cross
-logic calib_done3=1'b0, calib_done4=1'b0;
-always @(posedge clock) begin
-	calib_done3 <= calib_done;
-	calib_done4 <= calib_done3;
-end
 
 wire busactive = busmode != BUS_IDLE;
 // Any read/write activity and non-mode-0 is considered 'busy'
@@ -963,12 +951,6 @@ always @(posedge clock) begin
 		gramre <= 1'b0;
 
 		case (busmode)
-
-			BUS_INIT: begin
-				if (calib_done4) begin
-					busmode <= BUS_IDLE;
-				end
-			end
 
 			BUS_IDLE: begin
 
