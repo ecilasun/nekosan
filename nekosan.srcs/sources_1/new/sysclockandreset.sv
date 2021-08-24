@@ -4,7 +4,7 @@ module sysclockandreset(
 	input wire sys_clock,
 	output wire clk25,
 	output wire gpuclock,
-	output wire clk120,
+	output wire clk100,
 	output wire clk50,
 	output wire cpuclock,
 	output wire audiocore,
@@ -18,7 +18,7 @@ coreclock CentralClockGen(
 	.clk_in1(sys_clock),
 	.clk25(clk25),
 	.gpuclock(gpuclock),
-	.clk120(clk120),
+	.clk100(clk100),
 	.clk50(clk50),
 	.cpuclock(cpuclock),
 	.locked(clkAlocked) );

@@ -1,6 +1,55 @@
 Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
 ------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2021.1 (lin64) Build 3247384 Thu Jun 10 19:36:07 MDT 2021
+| Date         : Sun Aug 22 06:01:44 2021
+| Host         : encilinux running 64-bit Ubuntu 20.04.3 LTS
+| Command      : upgrade_ip
+| Device       : xc7a100tcsg324-1
+------------------------------------------------------------------------------------
+
+Upgrade Log for IP 'coreclock'
+
+1. Summary
+----------
+
+CAUTION (success, with warnings) in the conversion of coreclock (xilinx.com:ip:clk_wiz:6.0 (Rev. 8)) to Vivado generation flows.
+
+After upgrade, an IP may have parameter and port differences compared to the original customization. Please review the parameters within the IP customization GUI to ensure proper functionality. Also, please review the updated IP instantiation template to ensure proper connectivity, and update your design if required.
+
+2. Interface Information
+------------------------
+
+Detected external interface differences while upgrading 'coreclock'.
+
+
+-Upgrade has added interface 'clock_CLK_OUT3' (xilinx.com:signal:clock:1.0)
+
+-Upgrade has added interface 'clock_CLK_OUT4' (xilinx.com:signal:clock:1.0)
+
+-Upgrade has added interface 'clock_CLK_OUT5' (xilinx.com:signal:clock:1.0)
+
+
+3. Connection Warnings
+----------------------
+
+Detected external port differences while upgrading 'coreclock'. These changes may impact your design.
+
+
+-Upgrade has added port 'clk120'
+
+-Upgrade has added port 'clk50'
+
+-Upgrade has added port 'cpuclock'
+
+
+
+
+
+
+
+Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2021.1 (lin64) Build 3247384 Thu Jun 10 19:36:07 MDT 2021
 | Date         : Sat Aug 21 06:13:40 2021
 | Host         : encilinux running 64-bit Ubuntu 20.04.2 LTS
 | Command      : upgrade_ip

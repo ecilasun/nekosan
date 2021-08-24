@@ -61,14 +61,14 @@ module nekosantop(
 // ----------------------------------------------------------------------------
 
 wire devicereset;
-wire clk25, gpuclock, clk120, clk50;
+wire clk25, gpuclock, clk100, clk50;
 wire sys_clk_in, clk200, cpuclock, audiocore;
 
 sysclockandreset SystemClockAndResetGen(
 	.sys_clock(sys_clock),
 	.clk25(clk25),
 	.gpuclock(gpuclock),
-	.clk120(clk120),
+	.clk100(clk100),
 	.clk50(clk50),
 	.cpuclock(cpuclock),
 	.audiocore(audiocore),
@@ -87,7 +87,6 @@ wire [31:0] busaddress;
 wire [31:0] busdata;
 wire [3:0] buswe;
 wire busre;
-wire cachemode;
 wire [2:0] IRQ_BITS;
 
 wire businitialized;
@@ -97,6 +96,7 @@ sysbus SystemBus(
 	.audiocore(audiocore),
 	.clk25(clk25),
 	.clk50(clk50),
+	.clk100(clk100),
 	.gpuclock(gpuclock),
 	.resetn(resetn),
 	.businitialized(businitialized),
@@ -106,7 +106,6 @@ sysbus SystemBus(
 	.busdata(busdata),
 	.buswe(buswe),
 	.busre(busre),
-	.cachemode(cachemode),
 	// Interrupts
 	.IRQ_BITS(IRQ_BITS),
 	// UART
@@ -173,7 +172,6 @@ rvcpu CPU0(
 	.busdata(busdata),
 	.buswe(buswe),
 	.busre(busre),
-	.cachemode(cachemode),
 	// Interrupts
 	.IRQ((|IRQ_BITS)),
 	.IRQ_BITS(IRQ_BITS) );

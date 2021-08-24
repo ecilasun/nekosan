@@ -5,6 +5,7 @@ module sysbus(
 	input wire audiocore,
 	input wire clk25,
 	input wire clk50,
+	input wire clk100,
 	input wire gpuclock,
 	input wire resetn,
 	output logic businitialized = 1'b0,
@@ -14,7 +15,6 @@ module sysbus(
 	inout wire [31:0] busdata,
 	input wire [3:0] buswe,
 	input wire busre,
-	input wire cachemode, // 0:D$, 1:I$
 	// Interrupts
 	output logic [2:0] IRQ_BITS = 3'b000,
 	// UART
@@ -409,20 +409,21 @@ SPIfifo SDCardWriteFifo(
 	.full(spiwfull),
 	.din(spiwdin),
 	.wr_en(spiwwe),
-	.clk(clock),
+	.wr_clk(clock),
 	// Out
 	.empty(spiwempty),
 	.dout(spiwdout),
 	.rd_en(spiwre),
+	.rd_clk(clk100),
 	.valid(spiwvalid),
 	// Ctl
-	.srst(~resetn) );
+	.rst(~resetn) );
 
 // Pull from write queue and send through SD controller
 logic sddatawe = 1'b0;
 logic [7:0] sddataout = 8'd0;
 logic [1:0] sdqwritestate = 2'b00;
-always @(posedge clock) begin
+always @(posedge clk100) begin
 
 	spiwre <= 1'b0;
 	sddatawe <= 1'b0;
@@ -459,19 +460,20 @@ SPIfifo SDCardReadFifo(
 	.full(spirfull),
 	.din(spirdin),
 	.wr_en(spirwe),
+	.wr_clk(clk100),
 	// Out
 	.empty(spirempty),
 	.dout(spirdout),
 	.rd_en(spirre),
 	.valid(spirvalid),
-	.clk(clock),
+	.rd_clk(clock),
 	// Ctl
-	.srst(~resetn) );
+	.rst(~resetn) );
 
 // Push incoming data from SD controller to read queue
 wire [7:0] sddatain;
 wire sddatainready;
-always @(posedge clock) begin
+always @(posedge clk100) begin
 	spirwe <= 1'b0;
 	if (sddatainready) begin
 		spirwe <= 1'b1;
@@ -480,7 +482,7 @@ always @(posedge clock) begin
 end
 
 SPI_MASTER SDCardController(
-        .CLK(clock),
+        .CLK(clk100),
         .RST(~resetn),
         // SPI MASTER INTERFACE
         .SCLK(spi_sck),
@@ -503,8 +505,6 @@ SPI_MASTER SDCardController(
 
 wire calib_done;
 wire [11:0] device_temp;
-
-logic calib_done1=1'b0;
 
 logic [27:0] app_addr = 28'd0;
 logic [2:0]  app_cmd = 3'd0;
@@ -599,10 +599,10 @@ logic [2:0] ddr3uistate = IDLE;
 localparam CMD_WRITE = 3'b000;
 localparam CMD_READ = 3'b001;
 
-// Align calibration signal to bus clock
+// Bus calibration complete trigger
 always @ (posedge clock) begin
-	calib_done1 <= calib_done;
-	businitialized <= calib_done1;
+	if (calib_done)
+		businitialized <= 1'b1;
 end
 
 // ddr3 driver

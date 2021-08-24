@@ -12,7 +12,6 @@ module rvcpu(
 	inout wire [31:0] busdata,
 	output logic [3:0] buswe = 4'h0,
 	output logic busre = 1'b0,
-	output logic cachemode = 1'b0,
 	input wire IRQ,
 	input wire [2:0] IRQ_BITS);
 
@@ -702,8 +701,6 @@ always @(posedge clock, negedge resetn) begin
 						/*if (~busbusy) begin // Need this for multi-CPU
 						end else begin*/
 						busaddress <= immreach;
-						// Set cache mode to D$
-						cachemode <= 1'b0;
 						unique case (func3)
 							3'b000: begin // BYTE
 								dataout <= {rval2[7:0], rval2[7:0], rval2[7:0], rval2[7:0]};
@@ -916,8 +913,6 @@ always @(posedge clock, negedge resetn) begin
 					PC <= nextPC;
 					busaddress <= nextPC;
 					busre <= 1'b1;
-					// Set cache mode to I$
-					cachemode <= 1'b1;
 
 					if (CSRReg[`CSR_MSTATUS][3]) begin
 
@@ -995,13 +990,11 @@ always @(posedge clock, negedge resetn) begin
 				endcase
 				cpustate[CPU_RETIRE] <= 1'b1;
 			end
-			
+
 			cpustate[CPU_LOADSTALL]: begin
 				if (~busbusy) begin
 					busaddress <= immreach;
 					busre <= 1'b1;
-					// Set cache mode to D$
-					cachemode <= 1'b0;
 					cpustate[CPU_LOAD] <= 1'b1;
 				end else begin
 					cpustate[CPU_LOADSTALL] <= 1'b1;
