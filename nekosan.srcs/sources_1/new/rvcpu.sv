@@ -516,6 +516,8 @@ wire [31:0] immpc = PC + immed;
 wire [31:0] pc4 = PC + 32'd4;
 wire [31:0] branchpc = branchout ? immpc : pc4;
 
+logic [31:0] intreg;
+
 always @(posedge clock, negedge resetn) begin
 	if (~resetn) begin
 	
@@ -562,6 +564,7 @@ always @(posedge clock, negedge resetn) begin
 				divisor <= rval2;
 				multiplicand <= rval1;
 				multiplier <= rval2;
+				intreg <= immed;
 
 				cpustate[CPU_EXEC] <= 1'b1;
 			end
@@ -583,7 +586,7 @@ always @(posedge clock, negedge resetn) begin
 					end
 					`OPCODE_LUI: begin
 						regwena <= 1'b1;
-						regdata <= immed;
+						regdata <= intreg;
 						cpustate[CPU_RETIRE] <= 1'b1;
 					end
 					`OPCODE_JAL: begin
@@ -630,7 +633,7 @@ always @(posedge clock, negedge resetn) begin
 							end
 							`FMVWX: begin
 								fregwena <= 1'b1;
-								fregdata <= rval1;
+								fregdata <= multiplicand; // rval1; multiplicant already equals to a copy of rval1
 								cpustate[CPU_RETIRE] <= 1'b1;
 							end
 							`FADD: begin
@@ -967,22 +970,22 @@ always @(posedge clock, negedge resetn) begin
 				// Write to r/w CSR
 				case(func3)
 					3'b001: begin // CSRRW
-						CSRReg[CSRIndextoLinearIndex] <= rval1;
+						CSRReg[CSRIndextoLinearIndex] <= multiplicand;
 					end
 					3'b101: begin // CSRRWI
-						CSRReg[CSRIndextoLinearIndex] <= immed;
+						CSRReg[CSRIndextoLinearIndex] <= intreg;
 					end
 					3'b010: begin // CSRRS
-						CSRReg[CSRIndextoLinearIndex] <= regdata | rval1;
+						CSRReg[CSRIndextoLinearIndex] <= regdata | multiplicand;
 					end
 					3'b110: begin // CSRRSI
-						CSRReg[CSRIndextoLinearIndex] <= regdata | immed;
+						CSRReg[CSRIndextoLinearIndex] <= regdata | intreg;
 					end
 					3'b011: begin // CSSRRC
-						CSRReg[CSRIndextoLinearIndex] <= regdata & (~rval1);
+						CSRReg[CSRIndextoLinearIndex] <= regdata & (~multiplicand);
 					end
 					3'b111: begin // CSRRCI
-						CSRReg[CSRIndextoLinearIndex] <= regdata & (~immed);
+						CSRReg[CSRIndextoLinearIndex] <= regdata & (~intreg);
 					end
 					default: begin // Unknown
 						CSRReg[CSRIndextoLinearIndex] <= regdata;
