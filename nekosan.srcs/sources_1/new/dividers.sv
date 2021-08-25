@@ -10,13 +10,11 @@ module DIVU(
     output [31:00] remainder,
     output logic busy);
 
-wire ready;
 logic [5:0] count;
 logic [31:00] reg_q;
 logic [31:00] reg_r;
 logic [31:00] reg_b;
-logic busy2, r_sign;
-assign ready = ~busy&busy2;
+logic r_sign;
 wire [32:0] sub_add=r_sign?({reg_r,quotient[31]}+{1'b0,reg_b}):
 							({reg_r,quotient[31]}-{1'b0,reg_b});
 assign remainder = r_sign ? reg_r + reg_b : reg_r;
@@ -26,9 +24,7 @@ always @(posedge clk or posedge reset) begin
     if(reset) begin
         //count<=0;
         busy<=0;
-        busy2<=0;
     end else begin
-        busy2<=busy;
         if(start) begin
         	if (divisor==0) begin
         		// Divide by zero
@@ -67,14 +63,12 @@ module DIV(
     output [31:0] remainder,
     output logic busy );
 
-wire ready;
 logic [5:0] count;
 logic [31:00] reg_q;
 logic [31:00] reg_r;
 logic [31:00] reg_b;
 wire [31:00] reg_r2;
-logic busy2, r_sign;
-assign ready=~busy&busy2;
+logic r_sign;
 wire [32:0] sub_add=r_sign?({reg_r,reg_q[31]}+{1'b0,reg_b}):
 							({reg_r,reg_q[31]}-{1'b0,reg_b});
 assign reg_r2 = r_sign ? reg_r + reg_b : reg_r;
@@ -85,9 +79,7 @@ always @(posedge clk or posedge reset) begin
     if(reset) begin
         //count<=0;
         busy<=0;
-        busy2<=0;
     end else begin
-        busy2<=busy;
         if(start) begin
         	r_sign<=0;
         	if (divisor==0) begin

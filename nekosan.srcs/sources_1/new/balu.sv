@@ -10,7 +10,7 @@ module BALU(
 	input wire [3:0] bluop);
 
 // Branch ALU
-always @ (posedge clock) begin
+always_comb begin
 	case (bluop)
 		// BRANCH ALU
 		`ALU_EQ:   begin branchout = val1 == val2 ? 1'b1 : 1'b0; end
