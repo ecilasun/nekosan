@@ -37,22 +37,29 @@ localparam CPU_UPDATECSR	= 7;
 localparam CPU_MSTALL		= 8;
 localparam CPU_FSTALL		= 9;
 localparam CPU_FMSTALL		= 10;
+localparam CPU_WMATHRESULT	= 11;
 
 logic [31:0] PC;
 logic [31:0] nextPC;
 logic ebreak;
 logic illegalinstruction;
-logic [10:0] cpustate;
+logic [11:0] cpustate;
 logic [31:0] instruction;
+logic [31:0] mathresult;
+logic [31:0] intreg;
+logic [31:0] fvalreg;
 
 initial begin
 	PC = `CPU_RESET_VECTOR;
 	nextPC = `CPU_RESET_VECTOR;
 	ebreak = 1'b0;
 	illegalinstruction = 1'b0;
-	cpustate = 11'd0;
+	cpustate = 12'd0;
 	cpustate[CPU_IDLE] = 1'b1; // IDLE state by default to wait for the bus initialization
 	instruction = {25'd0, `ADDI}; // NOOP by default (addi x0,x0,0)
+	intreg = 32'd0;
+	fvalreg = 32'd0;
+	mathresult = 32'd0;
 end
 
 wire [4:0] opcode;
@@ -446,32 +453,32 @@ initial begin
 	// TODO: marchid: 0x0000_0004
 end
 
-always_comb begin
+always @(posedge clock) begin
 	case (csrindex)
-		12'h001: CSRIndextoLinearIndex = `CSR_FFLAGS;
-		12'h002: CSRIndextoLinearIndex = `CSR_FRM;
-		12'h003: CSRIndextoLinearIndex = `CSR_FCSR;
-		12'h300: CSRIndextoLinearIndex = `CSR_MSTATUS;
-		12'h301: CSRIndextoLinearIndex = `CSR_MISA;
-		12'h304: CSRIndextoLinearIndex = `CSR_MIE;
-		12'h305: CSRIndextoLinearIndex = `CSR_MTVEC;
-		12'h340: CSRIndextoLinearIndex = `CSR_MSCRATCH;
-		12'h341: CSRIndextoLinearIndex = `CSR_MEPC;
-		12'h342: CSRIndextoLinearIndex = `CSR_MCAUSE;
-		12'h343: CSRIndextoLinearIndex = `CSR_MTVAL;
-		12'h344: CSRIndextoLinearIndex = `CSR_MIP;
-		12'h780: CSRIndextoLinearIndex = `CSR_DCSR;
-		12'h781: CSRIndextoLinearIndex = `CSR_DPC;
-		12'h800: CSRIndextoLinearIndex = `CSR_TIMECMPLO;
-		12'h801: CSRIndextoLinearIndex = `CSR_TIMECMPHI;
-		12'hB00: CSRIndextoLinearIndex = `CSR_CYCLELO;
-		12'hB80: CSRIndextoLinearIndex = `CSR_CYCLEHI;
-		12'hC01: CSRIndextoLinearIndex = `CSR_TIMELO;
-		12'hC02: CSRIndextoLinearIndex = `CSR_RETILO;
-		12'hC81: CSRIndextoLinearIndex = `CSR_TIMEHI;
-		12'hC82: CSRIndextoLinearIndex = `CSR_RETIHI;
-		12'hF14: CSRIndextoLinearIndex = `CSR_HARTID;
-		default: CSRIndextoLinearIndex = `CSR_UNUSED;
+		12'h001: CSRIndextoLinearIndex <= `CSR_FFLAGS;
+		12'h002: CSRIndextoLinearIndex <= `CSR_FRM;
+		12'h003: CSRIndextoLinearIndex <= `CSR_FCSR;
+		12'h300: CSRIndextoLinearIndex <= `CSR_MSTATUS;
+		12'h301: CSRIndextoLinearIndex <= `CSR_MISA;
+		12'h304: CSRIndextoLinearIndex <= `CSR_MIE;
+		12'h305: CSRIndextoLinearIndex <= `CSR_MTVEC;
+		12'h340: CSRIndextoLinearIndex <= `CSR_MSCRATCH;
+		12'h341: CSRIndextoLinearIndex <= `CSR_MEPC;
+		12'h342: CSRIndextoLinearIndex <= `CSR_MCAUSE;
+		12'h343: CSRIndextoLinearIndex <= `CSR_MTVAL;
+		12'h344: CSRIndextoLinearIndex <= `CSR_MIP;
+		12'h780: CSRIndextoLinearIndex <= `CSR_DCSR;
+		12'h781: CSRIndextoLinearIndex <= `CSR_DPC;
+		12'h800: CSRIndextoLinearIndex <= `CSR_TIMECMPLO;
+		12'h801: CSRIndextoLinearIndex <= `CSR_TIMECMPHI;
+		12'hB00: CSRIndextoLinearIndex <= `CSR_CYCLELO;
+		12'hB80: CSRIndextoLinearIndex <= `CSR_CYCLEHI;
+		12'hC01: CSRIndextoLinearIndex <= `CSR_TIMELO;
+		12'hC02: CSRIndextoLinearIndex <= `CSR_RETILO;
+		12'hC81: CSRIndextoLinearIndex <= `CSR_TIMEHI;
+		12'hC82: CSRIndextoLinearIndex <= `CSR_RETIHI;
+		12'hF14: CSRIndextoLinearIndex <= `CSR_HARTID;
+		default: CSRIndextoLinearIndex <= `CSR_UNUSED;
 	endcase
 end
 
@@ -493,9 +500,11 @@ always @(posedge wallclock) begin
 	internalwallclockcounter <= internalwallclockcounter + 64'd1;
 end
 // Small adjustment to bring wallclock counter closer to cpu clock domain
+logic timertrigger = 1'b0;
 always @(posedge clock) begin
 	internalwallclockcounter1 <= internalwallclockcounter;
 	internalwallclockcounter2 <= internalwallclockcounter1;
+	timertrigger <= (internalwallclockcounter2 >= internaltimecmp) ? 1'b1 : 1'b0;
 end
 
 // Retired instruction counter
@@ -504,7 +513,7 @@ always @(posedge clock) begin
 	internalretirecounter <= internalretirecounter + {63'd0, cpustate[CPU_RETIRE]};
 end
 
-wire timerinterrupt = CSRReg[`CSR_MIE][7] & (internalwallclockcounter2 >= internaltimecmp);
+wire timerinterrupt = CSRReg[`CSR_MIE][7] & timertrigger;
 wire externalinterrupt = (CSRReg[`CSR_MIE][11] & IRQ);
 
 // -----------------------------------------------------------------------
@@ -516,8 +525,6 @@ wire [31:0] immpc = PC + immed;
 wire [31:0] pc4 = PC + 32'd4;
 wire [31:0] branchpc = branchout ? immpc : pc4;
 
-logic [31:0] intreg;
-
 always @(posedge clock, negedge resetn) begin
 	if (~resetn) begin
 	
@@ -525,7 +532,7 @@ always @(posedge clock, negedge resetn) begin
 
 	end else begin
 
-		cpustate <= 11'd0;
+		cpustate <= 12'd0;
 
 		busre <= 1'b0;
 		buswe <= 1'b0;
@@ -565,6 +572,7 @@ always @(posedge clock, negedge resetn) begin
 				multiplicand <= rval1;
 				multiplier <= rval2;
 				intreg <= immed;
+				fvalreg <= frval1;
 
 				cpustate[CPU_EXEC] <= 1'b1;
 			end
@@ -793,21 +801,25 @@ always @(posedge clock, negedge resetn) begin
 					// Keep stalling while M/D/R units are busy
 					cpustate[CPU_MSTALL] <= 1'b1;
 				end else begin
-					// Write result to destination register
-					regwena <= 1'b1;
 					unique case (aluop)
 						`ALU_MUL: begin
-							regdata <= product;
+							mathresult <= product;
 						end
 						`ALU_DIV: begin
-							regdata <= func3==`F3_DIV ? quotient : quotientu;
+							mathresult <= func3==`F3_DIV ? quotient : quotientu;
 						end
 						`ALU_REM: begin
-							regdata <= func3==`F3_REM ? remainder : remainderu;
+							mathresult <= func3==`F3_REM ? remainder : remainderu;
 						end
 					endcase
-					cpustate[CPU_RETIRE] <= 1'b1;
+					cpustate[CPU_WMATHRESULT] <= 1'b1;
 				end
+			end
+			
+			cpustate[CPU_WMATHRESULT]: begin
+				regwena <= 1'b1;
+				regdata <= mathresult;
+				cpustate[CPU_RETIRE] <= 1'b1;
 			end
 
 			cpustate[CPU_FSTALL]: begin
